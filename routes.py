@@ -12,15 +12,15 @@ from config import GOOGLE_API_KEY
 import logging
 from sqlalchemy.exc import SQLAlchemyError
 from werkzeug.security import generate_password_hash, check_password_hash
-from openai import OpenAI
 
 # Configure Gemini API
 genai.configure(api_key=GOOGLE_API_KEY)
-model = genai.GenerativeModel('gemini-2.0-flash')
 
-# Configure OpenAI API
-OPENAI_API_KEY = os.environ.get("OPENAI_API_KEY")
-openai_client = OpenAI(api_key=OPENAI_API_KEY)
+# Text model (optimized for faster responses)
+text_model = genai.GenerativeModel('gemini-2.0-flash')
+
+# Vision model (supporting multimodal inputs like images)
+vision_model = genai.GenerativeModel('gemini-pro-vision')
 
 # Login required decorator
 def login_required(f):
@@ -316,7 +316,7 @@ Preventive Measures:
 
 Note: This is an AI-generated analysis for informational purposes only. Please consult with a healthcare provider for proper medical diagnosis and treatment."""
 
-            response = model.generate_content(prompt)
+            response = text_model.generate_content(prompt)
             
             if not response or not response.text:
                 return jsonify({
@@ -379,11 +379,16 @@ Note: This is an AI-generated analysis for informational purposes only. Please c
     return render_template('symptom_checker.html')
 
 
-# Function to analyze medical images using OpenAI's Vision API
+# Function to analyze medical images using Google Gemini's Vision API
 def analyze_medical_image(base64_image, symptoms, age, gender, medical_history):
     try:
-        # Format the image for OpenAI API
-        base64_image_data = f"data:image/jpeg;base64,{base64_image}"
+        import base64
+        from PIL import Image
+        import io
+        
+        # Decode base64 image data
+        image_data = base64.b64decode(base64_image)
+        image = Image.open(io.BytesIO(image_data))
         
         # Create the prompt
         prompt = f"""As a medical AI assistant, analyze this medical image with the following patient information:
@@ -412,30 +417,17 @@ Important Notes:
 This is for educational purposes only and not a substitute for professional medical diagnosis.
 """
 
-        # the newest OpenAI model is "gpt-4o" which was released May 13, 2024.
-        # do not change this unless explicitly requested by the user
-        response = openai_client.chat.completions.create(
-            model="gpt-4o",
-            messages=[
-                {
-                    "role": "user",
-                    "content": [
-                        {"type": "text", "text": prompt},
-                        {
-                            "type": "image_url",
-                            "image_url": {"url": base64_image_data}
-                        }
-                    ]
-                }
-            ],
-            max_tokens=1000
-        )
+        # Generate content with the image using Gemini Pro Vision
+        response = vision_model.generate_content([prompt, image])
         
         # Extract and return the analysis
-        return response.choices[0].message.content
+        if response and hasattr(response, 'text'):
+            return response.text
+        else:
+            raise Exception("No response generated from Gemini model")
         
     except Exception as e:
-        app.logger.error(f"OpenAI API error: {str(e)}")
+        app.logger.error(f"Gemini Vision API error: {str(e)}")
         raise Exception(f"Error analyzing medical image: {str(e)}")
 
 

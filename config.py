@@ -1,7 +1,7 @@
 import os
 
 # Google Gemini API
-GOOGLE_API_KEY = os.environ.get('GOOGLE_API_KEY', "AIzaSyBrFEI0JTDLrQyU7sFqV9HPsAKt6ht9840")
+GOOGLE_API_KEY = os.environ.get('GOOGLE_API_KEY', "AIzaSyDydt1V58LLoRrrM98A1YeoGo6GnhJgNfk")
 
 # Database configuration
 DATABASE_URL = os.environ.get('DATABASE_URL', 'sqlite:///healthcare.db')
