@@ -677,6 +677,11 @@ def book_appointment():
                 db.session.add(doctor_notification)
             
             # Create notification for the patient
+            # Make sure formatted date and time are defined
+            if not 'formatted_date' in locals() or not 'formatted_time' in locals():
+                formatted_date = appointment_date.strftime('%A, %B %d, %Y')
+                formatted_time = appointment_time.strftime('%I:%M %p')
+                
             patient_notification = Notification(
                 user_id=patient.user_id,
                 appointment_id=new_appointment.id,
