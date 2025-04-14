@@ -133,6 +133,12 @@ document.addEventListener('DOMContentLoaded', function() {
             submitButton.disabled = false;
             
             if (data.success) {
+                // Show tabs container
+                const resultsTabs = document.getElementById('results-tabs');
+                if (resultsTabs) {
+                    resultsTabs.classList.remove('d-none');
+                }
+                
                 // Display text analysis
                 displayAnalysisResults(data.analysis);
                 

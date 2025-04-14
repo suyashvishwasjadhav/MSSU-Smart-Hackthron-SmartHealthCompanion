@@ -346,9 +346,9 @@ Note: This is an AI-generated analysis for informational purposes only. Please c
             
             # Process image if provided
             image_analysis_result = None
-            if has_image:
+            if has_image and new_check.image_data:
                 try:
-                    image_analysis_result = analyze_medical_image(base64_data, symptoms, age, gender, medical_history)
+                    image_analysis_result = analyze_medical_image(new_check.image_data, symptoms, age, gender, medical_history)
                     new_check.image_analysis = image_analysis_result
                     
                     # Create structured sections for the image analysis
