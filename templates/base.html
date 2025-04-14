@@ -1,0 +1,176 @@
+<!DOCTYPE html>
+<html lang="en" data-bs-theme="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}HealthConnect - Smart Healthcare Platform{% endblock %}</title>
+    <!-- Bootstrap CSS -->
+    <link rel="stylesheet" href="https://cdn.replit.com/agent/bootstrap-agent-dark-theme.min.css">
+    <!-- Font Awesome -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <!-- Leaflet CSS for Maps -->
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.3/dist/leaflet.css" integrity="sha384-o/2yZuJZWGJ4s/794j42yL0RkEHKmI+BGUYBvZ4QZAz1Jxk7MDBgGHgfZI6j+qp3" crossorigin="anonymous">
+    <!-- Custom CSS -->
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/custom.css') }}">
+    {% block extra_css %}{% endblock %}
+</head>
+<body>
+    <!-- Navigation Bar -->
+    <nav class="navbar navbar-expand-lg navbar-dark bg-primary">
+        <div class="container">
+            <a class="navbar-brand d-flex align-items-center" href="{{ url_for('home') }}">
+                <i class="fas fa-heartbeat me-2"></i>
+                <span>HealthConnect</span>
+            </a>
+            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav" aria-controls="navbarNav" aria-expanded="false" aria-label="Toggle navigation">
+                <span class="navbar-toggler-icon"></span>
+            </button>
+            <div class="collapse navbar-collapse" id="navbarNav">
+                <ul class="navbar-nav ms-auto">
+                    {% if 'user_id' in session %}
+                        <li class="nav-item">
+                            <a class="nav-link" href="{{ url_for('dashboard') }}">
+                                <i class="fas fa-tachometer-alt me-1"></i> Dashboard
+                            </a>
+                        </li>
+                        {% if session.get('user_type') == 'patient' %}
+                            <li class="nav-item">
+                                <a class="nav-link" href="{{ url_for('symptom_checker') }}">
+                                    <i class="fas fa-stethoscope me-1"></i> Symptom Checker
+                                </a>
+                            </li>
+                            <li class="nav-item">
+                                <a class="nav-link" href="{{ url_for('doctor_finder') }}">
+                                    <i class="fas fa-user-md me-1"></i> Find Doctors
+                                </a>
+                            </li>
+                        {% endif %}
+                        <li class="nav-item">
+                            <a class="nav-link" href="{{ url_for('appointments') }}">
+                                <i class="fas fa-calendar-alt me-1"></i> Appointments
+                            </a>
+                        </li>
+                        <li class="nav-item dropdown">
+                            <a class="nav-link dropdown-toggle" href="#" id="navbarDropdown" role="button" data-bs-toggle="dropdown" aria-expanded="false">
+                                <i class="fas fa-user-circle me-1"></i> Account
+                            </a>
+                            <ul class="dropdown-menu dropdown-menu-end" aria-labelledby="navbarDropdown">
+                                <li>
+                                    <a class="dropdown-item" href="{{ url_for('profile') }}">
+                                        <i class="fas fa-id-card me-2"></i> My Profile
+                                    </a>
+                                </li>
+                                <li><hr class="dropdown-divider"></li>
+                                <li>
+                                    <a class="dropdown-item" href="{{ url_for('logout') }}">
+                                        <i class="fas fa-sign-out-alt me-2"></i> Logout
+                                    </a>
+                                </li>
+                            </ul>
+                        </li>
+                    {% else %}
+                        <li class="nav-item">
+                            <a class="nav-link" href="{{ url_for('login') }}">
+                                <i class="fas fa-sign-in-alt me-1"></i> Login
+                            </a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link" href="{{ url_for('register') }}">
+                                <i class="fas fa-user-plus me-1"></i> Register
+                            </a>
+                        </li>
+                    {% endif %}
+                </ul>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Flash Messages -->
+    <div class="container my-3">
+        {% with messages = get_flashed_messages(with_categories=true) %}
+            {% if messages %}
+                {% for category, message in messages %}
+                    <div class="alert alert-{{ category }} alert-dismissible fade show" role="alert">
+                        {{ message }}
+                        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                    </div>
+                {% endfor %}
+            {% endif %}
+        {% endwith %}
+    </div>
+
+    <!-- Main Content -->
+    <main>
+        {% block content %}{% endblock %}
+    </main>
+
+    <!-- Footer -->
+    <footer class="bg-dark text-light py-4 mt-5">
+        <div class="container">
+            <div class="row">
+                <div class="col-md-4 mb-3">
+                    <h5 class="mb-3">HealthConnect</h5>
+                    <p>Connecting patients with healthcare professionals through smart technology.</p>
+                    <div class="d-flex">
+                        <a href="#" class="text-light me-3"><i class="fab fa-facebook-f"></i></a>
+                        <a href="#" class="text-light me-3"><i class="fab fa-twitter"></i></a>
+                        <a href="#" class="text-light me-3"><i class="fab fa-instagram"></i></a>
+                        <a href="#" class="text-light"><i class="fab fa-linkedin-in"></i></a>
+                    </div>
+                </div>
+                <div class="col-md-4 mb-3">
+                    <h5 class="mb-3">Quick Links</h5>
+                    <ul class="list-unstyled">
+                        <li><a href="{{ url_for('home') }}" class="text-light text-decoration-none">Home</a></li>
+                        {% if 'user_id' in session %}
+                            <li><a href="{{ url_for('dashboard') }}" class="text-light text-decoration-none">Dashboard</a></li>
+                            {% if session.get('user_type') == 'patient' %}
+                                <li><a href="{{ url_for('symptom_checker') }}" class="text-light text-decoration-none">Symptom Checker</a></li>
+                                <li><a href="{{ url_for('doctor_finder') }}" class="text-light text-decoration-none">Find Doctors</a></li>
+                            {% endif %}
+                            <li><a href="{{ url_for('appointments') }}" class="text-light text-decoration-none">Appointments</a></li>
+                        {% else %}
+                            <li><a href="{{ url_for('login') }}" class="text-light text-decoration-none">Login</a></li>
+                            <li><a href="{{ url_for('register') }}" class="text-light text-decoration-none">Register</a></li>
+                        {% endif %}
+                    </ul>
+                </div>
+                <div class="col-md-4">
+                    <h5 class="mb-3">Contact Us</h5>
+                    <ul class="list-unstyled">
+                        <li class="mb-2"><i class="fas fa-map-marker-alt me-2"></i> 123 Health St, Medical City</li>
+                        <li class="mb-2"><i class="fas fa-phone me-2"></i> (123) 456-7890</li>
+                        <li class="mb-2"><i class="fas fa-envelope me-2"></i> info@healthconnect.com</li>
+                    </ul>
+                </div>
+            </div>
+            <hr class="my-3">
+            <div class="text-center">
+                <p class="mb-0">&copy; 2024 HealthConnect. All rights reserved.</p>
+            </div>
+        </div>
+    </footer>
+
+    <!-- Toast Notification -->
+    <div class="position-fixed bottom-0 end-0 p-3" style="z-index: 11">
+        <div id="status-toast" class="toast" role="alert" aria-live="assertive" aria-atomic="true">
+            <div class="toast-header">
+                <i class="fas fa-info-circle me-2 text-primary"></i>
+                <strong class="me-auto">Notification</strong>
+                <button type="button" class="btn-close" data-bs-dismiss="toast" aria-label="Close"></button>
+            </div>
+            <div class="toast-body" id="toast-message">
+                <!-- Message will be inserted dynamically -->
+            </div>
+        </div>
+    </div>
+
+    <!-- Bootstrap JS Bundle with Popper -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js"></script>
+    <!-- Leaflet JS for Maps -->
+    <script src="https://unpkg.com/leaflet@1.9.3/dist/leaflet.js" integrity="sha384-okbbMvvx/qfQkmiQKfd5VifbKZ/W8p1qIsWvE1ROPUfHWsTVtEk+3MDcgHGSBQHz" crossorigin="anonymous"></script>
+    <!-- Main JS -->
+    <script src="{{ url_for('static', filename='js/main.js') }}"></script>
+    {% block extra_js %}{% endblock %}
+</body>
+</html>

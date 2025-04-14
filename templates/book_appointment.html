@@ -1,0 +1,206 @@
+{% extends 'base.html' %}
+
+{% block title %}Book Appointment - HealthConnect{% endblock %}
+
+{% block content %}
+<div class="container py-4">
+    <!-- Header Section -->
+    <div class="row mb-4">
+        <div class="col-lg-8 mx-auto text-center">
+            <h2 class="mb-3 fade-in"><i class="fas fa-calendar-plus me-2"></i>Book an Appointment</h2>
+            <p class="lead fade-in">Schedule a visit with one of our healthcare professionals.</p>
+        </div>
+    </div>
+
+    <div class="row">
+        <!-- Appointment Form -->
+        <div class="col-lg-8 mx-auto">
+            <div class="card border-0 shadow-lg fade-in">
+                <div class="card-header bg-primary text-white">
+                    <h4 class="mb-0"><i class="fas fa-calendar-check me-2"></i>Appointment Details</h4>
+                </div>
+                <div class="card-body p-4">
+                    <form id="booking-form" method="POST" action="{{ url_for('book_appointment') }}" class="needs-validation" novalidate>
+                        <div class="row g-3">
+                            <!-- Doctor Selection -->
+                            <div class="col-12 mb-3">
+                                <label for="doctor_id" class="form-label">Select Doctor <span class="text-danger">*</span></label>
+                                <select class="form-select" id="doctor_id" name="doctor_id" required {% if selected_doctor %}disabled{% endif %}>
+                                    <option value="" selected disabled>Choose a doctor</option>
+                                    {% for doctor in doctors %}
+                                    <option value="{{ doctor.id }}" {% if selected_doctor and selected_doctor.id == doctor.id %}selected{% endif %}>
+                                        Dr. {{ doctor.name }} - {{ doctor.specialization }}
+                                    </option>
+                                    {% endfor %}
+                                </select>
+                                {% if selected_doctor %}
+                                <input type="hidden" name="doctor_id" value="{{ selected_doctor.id }}">
+                                {% endif %}
+                                <div class="invalid-feedback">
+                                    Please select a doctor.
+                                </div>
+                            </div>
+                            
+                            <!-- Selected Doctor Info (shown only when a doctor is selected) -->
+                            {% if selected_doctor %}
+                            <div class="col-12 mb-3">
+                                <div class="card bg-light">
+                                    <div class="card-body">
+                                        <div class="row">
+                                            <div class="col-md-2 text-center mb-3 mb-md-0">
+                                                <div class="rounded-circle bg-white d-inline-flex align-items-center justify-content-center" style="width: 80px; height: 80px;">
+                                                    <i class="fas fa-user-md fa-3x text-primary"></i>
+                                                </div>
+                                            </div>
+                                            <div class="col-md-10">
+                                                <h5 class="card-title">Dr. {{ selected_doctor.name }}</h5>
+                                                <h6 class="card-subtitle mb-2 text-muted">{{ selected_doctor.specialization }}</h6>
+                                                {% if selected_doctor.address or selected_doctor.city or selected_doctor.state %}
+                                                <p class="mb-1">
+                                                    <i class="fas fa-map-marker-alt me-2 text-secondary"></i>
+                                                    {{ selected_doctor.address or '' }}
+                                                    {% if selected_doctor.address and (selected_doctor.city or selected_doctor.state) %}, {% endif %}
+                                                    {{ selected_doctor.city or '' }}
+                                                    {% if selected_doctor.city and selected_doctor.state %}, {% endif %}
+                                                    {{ selected_doctor.state or '' }}
+                                                </p>
+                                                {% endif %}
+                                                {% if selected_doctor.bio %}
+                                                <p class="card-text mt-2">{{ selected_doctor.bio }}</p>
+                                                {% endif %}
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                            {% endif %}
+                            
+                            <!-- Date & Time Selection -->
+                            <div class="col-md-6 mb-3">
+                                <label for="date" class="form-label">Date <span class="text-danger">*</span></label>
+                                <input type="date" class="form-control" id="date" name="date" required>
+                                <div class="invalid-feedback">
+                                    Please select an appointment date.
+                                </div>
+                                <div id="date-alert" class="alert alert-warning mt-2 d-none"></div>
+                            </div>
+                            
+                            <div class="col-md-6 mb-3">
+                                <label for="time" class="form-label">Time <span class="text-danger">*</span></label>
+                                <select class="form-select" id="time" name="time" disabled required>
+                                    <option value="" selected disabled>Select a date first</option>
+                                </select>
+                                <div class="invalid-feedback">
+                                    Please select an appointment time.
+                                </div>
+                            </div>
+                            
+                            <!-- Reason for Visit -->
+                            <div class="col-12 mb-3">
+                                <label for="reason" class="form-label">Reason for Visit</label>
+                                <textarea class="form-control" id="reason" name="reason" rows="3" placeholder="Briefly describe your symptoms or reason for the appointment"></textarea>
+                            </div>
+                            
+                            <!-- Submit Button -->
+                            <div class="col-12">
+                                <div class="d-grid">
+                                    <button type="submit" class="btn btn-primary py-2">
+                                        <i class="fas fa-calendar-check me-2"></i>Book Appointment
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Appointment Tips -->
+    <div class="row mt-4">
+        <div class="col-lg-8 mx-auto">
+            <div class="card border-0 shadow-sm fade-in">
+                <div class="card-header bg-info text-white">
+                    <h5 class="mb-0"><i class="fas fa-lightbulb me-2"></i>Appointment Tips</h5>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <div class="d-flex">
+                                <i class="fas fa-clipboard-list text-info me-3 fa-2x"></i>
+                                <div>
+                                    <h6>Prepare Your Questions</h6>
+                                    <p class="mb-0">Make a list of symptoms, concerns, and questions to discuss with your doctor.</p>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <div class="d-flex">
+                                <i class="fas fa-pills text-info me-3 fa-2x"></i>
+                                <div>
+                                    <h6>Bring Your Medications</h6>
+                                    <p class="mb-0">Bring a list of current medications or the medication bottles themselves.</p>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <div class="d-flex">
+                                <i class="fas fa-file-medical text-info me-3 fa-2x"></i>
+                                <div>
+                                    <h6>Medical History Access</h6>
+                                    <p class="mb-0">Have access to your medical history including previous tests or diagnoses.</p>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <div class="d-flex">
+                                <i class="fas fa-clock text-info me-3 fa-2x"></i>
+                                <div>
+                                    <h6>Arrive Early</h6>
+                                    <p class="mb-0">Plan to arrive 15 minutes before your appointment time.</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Appointment Confirmation Modal -->
+<div class="modal fade" id="confirm-appointment-modal" tabindex="-1" aria-labelledby="confirmModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header bg-primary text-white">
+                <h5 class="modal-title" id="confirmModalLabel"><i class="fas fa-calendar-check me-2"></i>Confirm Appointment</h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <p>Please confirm your appointment with:</p>
+                <div class="card bg-light mb-3">
+                    <div class="card-body">
+                        <p class="mb-1"><strong>Doctor:</strong> <span id="confirm-doctor"></span></p>
+                        <p class="mb-1"><strong>Date:</strong> <span id="confirm-date"></span></p>
+                        <p class="mb-1"><strong>Time:</strong> <span id="confirm-time"></span></p>
+                        <p class="mb-0"><strong>Reason:</strong> <span id="confirm-reason"></span></p>
+                    </div>
+                </div>
+                <p>You will receive a confirmation email with these details.</p>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
+                    <i class="fas fa-times me-2"></i>Cancel
+                </button>
+                <button type="button" class="btn btn-primary" id="confirm-booking">
+                    <i class="fas fa-check me-2"></i>Confirm Booking
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script src="{{ url_for('static', filename='js/appointments.js') }}"></script>
+{% endblock %}

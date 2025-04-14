@@ -1,0 +1,170 @@
+{% extends 'base.html' %}
+
+{% block title %}Symptom Checker - HealthConnect{% endblock %}
+
+{% block content %}
+<div class="container py-4">
+    <!-- Header Section -->
+    <div class="row mb-4">
+        <div class="col-lg-8 mx-auto text-center">
+            <h2 class="mb-3 fade-in"><i class="fas fa-stethoscope me-2"></i>AI Symptom Checker</h2>
+            <p class="lead fade-in">Describe your symptoms and get AI-powered analysis to help understand potential conditions.</p>
+            <div class="alert alert-info fade-in">
+                <i class="fas fa-info-circle me-2"></i> This tool provides information for educational purposes only and is not a substitute for professional medical advice, diagnosis, or treatment.
+            </div>
+        </div>
+    </div>
+
+    <div class="row">
+        <!-- Symptom Input Form -->
+        <div class="col-lg-6 mb-4">
+            <div class="card border-0 shadow-lg symptom-form fade-in">
+                <div class="card-header bg-primary text-white">
+                    <h4 class="mb-0"><i class="fas fa-clipboard-list me-2"></i>Tell Us About Your Symptoms</h4>
+                </div>
+                <div class="card-body p-4">
+                    <div id="symptom-form-alerts"></div>
+                    <form id="symptom-form">
+                        <div class="mb-3">
+                            <label for="symptoms" class="form-label">Symptoms <span class="text-danger">*</span></label>
+                            <textarea class="form-control" id="symptoms" name="symptoms" rows="4" placeholder="Describe your symptoms in detail (e.g., headache, fever, cough, etc.)" required></textarea>
+                            <div class="form-text">Be as specific as possible about what you're experiencing.</div>
+                        </div>
+                        
+                        <div class="row g-3 mb-3">
+                            <div class="col-md-6">
+                                <label for="age" class="form-label">Age</label>
+                                <input type="number" class="form-control" id="age" name="age" min="1" max="120" placeholder="Your age">
+                            </div>
+                            <div class="col-md-6">
+                                <label for="gender" class="form-label">Gender</label>
+                                <select class="form-select" id="gender" name="gender">
+                                    <option value="" selected>Select gender</option>
+                                    <option value="Male">Male</option>
+                                    <option value="Female">Female</option>
+                                    <option value="Other">Other</option>
+                                </select>
+                            </div>
+                        </div>
+                        
+                        <div class="row g-3 mb-3">
+                            <div class="col-md-6">
+                                <label for="duration" class="form-label">Duration</label>
+                                <select class="form-select" id="duration" name="duration">
+                                    <option value="" selected>How long?</option>
+                                    <option value="Hours">Hours</option>
+                                    <option value="1-2 days">1-2 days</option>
+                                    <option value="Several days">Several days</option>
+                                    <option value="1-2 weeks">1-2 weeks</option>
+                                    <option value="Several weeks">Several weeks</option>
+                                    <option value="Months">Months</option>
+                                    <option value="Years">Years</option>
+                                </select>
+                            </div>
+                            <div class="col-md-6">
+                                <label for="severity" class="form-label">Severity</label>
+                                <select class="form-select" id="severity" name="severity">
+                                    <option value="" selected>How severe?</option>
+                                    <option value="Mild">Mild - Noticeable but not interfering with daily activities</option>
+                                    <option value="Moderate">Moderate - Somewhat interfering with daily activities</option>
+                                    <option value="Severe">Severe - Significantly interfering with daily activities</option>
+                                    <option value="Very Severe">Very Severe - Cannot function normally</option>
+                                </select>
+                            </div>
+                        </div>
+                        
+                        <div class="mb-4">
+                            <label for="medical_history" class="form-label">Medical History</label>
+                            <textarea class="form-control" id="medical_history" name="medical_history" rows="3" placeholder="Any existing conditions, medications, allergies, or relevant medical history"></textarea>
+                        </div>
+                        
+                        <div class="d-grid">
+                            <button type="submit" class="btn btn-primary" id="submit-symptoms">
+                                <i class="fas fa-search me-2"></i>Analyze Symptoms
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Results Section -->
+        <div class="col-lg-6">
+            <div class="card border-0 shadow-lg fade-in">
+                <div class="card-header bg-info text-white">
+                    <h4 class="mb-0"><i class="fas fa-chart-line me-2"></i>Analysis Results</h4>
+                </div>
+                <div class="card-body p-4">
+                    <!-- Loading Spinner -->
+                    <div id="loading-spinner" class="d-none text-center py-5">
+                        <div class="spinner-border text-primary" role="status">
+                            <span class="visually-hidden">Loading...</span>
+                        </div>
+                        <p class="mt-3">Analyzing your symptoms...</p>
+                    </div>
+                    
+                    <!-- Results will be inserted here -->
+                    <div id="analysis-results"></div>
+                    
+                    <!-- Doctor Finder Suggestion (initially hidden) -->
+                    <div id="doctor-finder-suggestion" class="alert alert-primary mt-4 d-none">
+                        <div class="d-flex align-items-center">
+                            <i class="fas fa-user-md fa-2x me-3"></i>
+                            <div>
+                                <h5 class="mb-1">Need to see a doctor?</h5>
+                                <p class="mb-2">Based on your symptoms, we can help you find appropriate healthcare providers nearby.</p>
+                                <a href="{{ url_for('doctor_finder') }}" class="btn btn-primary">
+                                    <i class="fas fa-search me-1"></i> Find Doctors
+                                </a>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Health Tips Card -->
+            <div class="card border-0 shadow-sm mt-4 fade-in">
+                <div class="card-header bg-success text-white">
+                    <h5 class="mb-0"><i class="fas fa-heartbeat me-2"></i>General Health Tips</h5>
+                </div>
+                <div class="card-body">
+                    <ul class="list-group list-group-flush">
+                        <li class="list-group-item d-flex">
+                            <i class="fas fa-check-circle text-success me-2 mt-1"></i>
+                            <div>
+                                <strong>Stay hydrated</strong>
+                                <p class="mb-0 small">Drink plenty of water throughout the day.</p>
+                            </div>
+                        </li>
+                        <li class="list-group-item d-flex">
+                            <i class="fas fa-check-circle text-success me-2 mt-1"></i>
+                            <div>
+                                <strong>Rest adequately</strong>
+                                <p class="mb-0 small">Ensure you get 7-9 hours of quality sleep.</p>
+                            </div>
+                        </li>
+                        <li class="list-group-item d-flex">
+                            <i class="fas fa-check-circle text-success me-2 mt-1"></i>
+                            <div>
+                                <strong>Monitor symptoms</strong>
+                                <p class="mb-0 small">Keep track of any changes in your symptoms.</p>
+                            </div>
+                        </li>
+                        <li class="list-group-item d-flex">
+                            <i class="fas fa-exclamation-triangle text-warning me-2 mt-1"></i>
+                            <div>
+                                <strong>Seek immediate care if:</strong>
+                                <p class="mb-0 small">You experience severe chest pain, difficulty breathing, sudden severe headache, or loss of consciousness.</p>
+                            </div>
+                        </li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script src="{{ url_for('static', filename='js/symptom-checker.js') }}"></script>
+{% endblock %}

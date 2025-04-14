@@ -1,0 +1,392 @@
+{% extends 'base.html' %}
+
+{% block title %}My Profile - HealthConnect{% endblock %}
+
+{% block content %}
+<div class="container py-4">
+    <!-- Profile Header -->
+    <div class="profile-header mb-4 fade-in">
+        <div class="row align-items-center">
+            <div class="col-md-2 mb-3 mb-md-0 text-center">
+                <div class="rounded-circle bg-light d-inline-flex align-items-center justify-content-center" style="width: 120px; height: 120px;">
+                    {% if user_type == 'doctor' %}
+                    <i class="fas fa-user-md fa-4x text-primary"></i>
+                    {% else %}
+                    <i class="fas fa-user fa-4x text-primary"></i>
+                    {% endif %}
+                </div>
+            </div>
+            <div class="col-md-10">
+                <h2 class="mb-1">{{ user_data.name }}</h2>
+                <p class="mb-0">
+                    {% if user_type == 'doctor' %}
+                    <span class="badge bg-info">Doctor</span> 
+                    <span class="text-light">{{ user_data.specialization }}</span>
+                    {% else %}
+                    <span class="badge bg-info">Patient</span>
+                    {% endif %}
+                </p>
+                <p class="text-light mb-0"><i class="fas fa-envelope me-2"></i>{{ session.get('user_email') }}</p>
+            </div>
+        </div>
+    </div>
+
+    <!-- Profile Form -->
+    <div class="row">
+        <div class="col-lg-8">
+            <div class="card border-0 shadow-lg mb-4 fade-in">
+                <div class="card-header bg-primary text-white">
+                    <h4 class="mb-0"><i class="fas fa-user-edit me-2"></i>Edit Your Profile</h4>
+                </div>
+                <div class="card-body p-4">
+                    <div id="profile-form-alerts"></div>
+                    <form id="profile-form">
+                        <div class="row g-3">
+                            <!-- Basic Information -->
+                            <div class="col-12 mb-3">
+                                <h5 class="border-bottom pb-2">Basic Information</h5>
+                            </div>
+                            
+                            <div class="col-md-6 mb-3">
+                                <label for="name" class="form-label">Full Name</label>
+                                <input type="text" class="form-control" id="name" name="name" value="{{ user_data.name }}">
+                            </div>
+                            
+                            <div class="col-md-6 mb-3">
+                                <label for="phone" class="form-label">Phone Number</label>
+                                <input type="tel" class="form-control" id="phone" name="phone" value="{{ user_data.phone or '' }}">
+                            </div>
+                            
+                            {% if user_type == 'doctor' %}
+                            <!-- Doctor Specific Fields -->
+                            <div class="col-md-6 mb-3">
+                                <label for="specialization" class="form-label">Specialization</label>
+                                <select class="form-select" id="specialization" name="specialization">
+                                    <option value="Cardiologist" {% if user_data.specialization == 'Cardiologist' %}selected{% endif %}>Cardiologist</option>
+                                    <option value="Dermatologist" {% if user_data.specialization == 'Dermatologist' %}selected{% endif %}>Dermatologist</option>
+                                    <option value="Endocrinologist" {% if user_data.specialization == 'Endocrinologist' %}selected{% endif %}>Endocrinologist</option>
+                                    <option value="Gastroenterologist" {% if user_data.specialization == 'Gastroenterologist' %}selected{% endif %}>Gastroenterologist</option>
+                                    <option value="Neurologist" {% if user_data.specialization == 'Neurologist' %}selected{% endif %}>Neurologist</option>
+                                    <option value="Obstetrician/Gynecologist" {% if user_data.specialization == 'Obstetrician/Gynecologist' %}selected{% endif %}>Obstetrician/Gynecologist</option>
+                                    <option value="Oncologist" {% if user_data.specialization == 'Oncologist' %}selected{% endif %}>Oncologist</option>
+                                    <option value="Ophthalmologist" {% if user_data.specialization == 'Ophthalmologist' %}selected{% endif %}>Ophthalmologist</option>
+                                    <option value="Orthopedic Surgeon" {% if user_data.specialization == 'Orthopedic Surgeon' %}selected{% endif %}>Orthopedic Surgeon</option>
+                                    <option value="Otolaryngologist" {% if user_data.specialization == 'Otolaryngologist' %}selected{% endif %}>Otolaryngologist (ENT)</option>
+                                    <option value="Pediatrician" {% if user_data.specialization == 'Pediatrician' %}selected{% endif %}>Pediatrician</option>
+                                    <option value="Psychiatrist" {% if user_data.specialization == 'Psychiatrist' %}selected{% endif %}>Psychiatrist</option>
+                                    <option value="Pulmonologist" {% if user_data.specialization == 'Pulmonologist' %}selected{% endif %}>Pulmonologist</option>
+                                    <option value="Radiologist" {% if user_data.specialization == 'Radiologist' %}selected{% endif %}>Radiologist</option>
+                                    <option value="Rheumatologist" {% if user_data.specialization == 'Rheumatologist' %}selected{% endif %}>Rheumatologist</option>
+                                    <option value="Urologist" {% if user_data.specialization == 'Urologist' %}selected{% endif %}>Urologist</option>
+                                    <option value="General Practitioner" {% if user_data.specialization == 'General Practitioner' %}selected{% endif %}>General Practitioner</option>
+                                    <option value="Other" {% if user_data.specialization == 'Other' %}selected{% endif %}>Other</option>
+                                </select>
+                            </div>
+                            
+                            <div class="col-md-6 mb-3">
+                                <!-- This field would be empty, keeping the layout balanced -->
+                            </div>
+                            
+                            <div class="col-12 mb-3">
+                                <label for="bio" class="form-label">Professional Bio</label>
+                                <textarea class="form-control" id="bio" name="bio" rows="4">{{ user_data.bio or '' }}</textarea>
+                                <div class="form-text">Share your expertise, experience, and approach to patient care.</div>
+                            </div>
+                            {% else %}
+                            <!-- Patient Specific Fields -->
+                            <div class="col-md-6 mb-3">
+                                <label for="dob" class="form-label">Date of Birth</label>
+                                <input type="date" class="form-control" id="dob" name="dob" value="{{ user_data.dob.strftime('%Y-%m-%d') if user_data.dob else '' }}">
+                            </div>
+                            
+                            <div class="col-md-6 mb-3">
+                                <label for="gender" class="form-label">Gender</label>
+                                <select class="form-select" id="gender" name="gender">
+                                    <option value="">Select gender</option>
+                                    <option value="Male" {% if user_data.gender == 'Male' %}selected{% endif %}>Male</option>
+                                    <option value="Female" {% if user_data.gender == 'Female' %}selected{% endif %}>Female</option>
+                                    <option value="Other" {% if user_data.gender == 'Other' %}selected{% endif %}>Other</option>
+                                    <option value="Prefer not to say" {% if user_data.gender == 'Prefer not to say' %}selected{% endif %}>Prefer not to say</option>
+                                </select>
+                            </div>
+                            
+                            <div class="col-12 mb-3">
+                                <label for="medical_history" class="form-label">Medical History</label>
+                                <textarea class="form-control" id="medical_history" name="medical_history" rows="3">{{ user_data.medical_history or '' }}</textarea>
+                                <div class="form-text">Include any chronic conditions, previous surgeries, or ongoing treatments.</div>
+                            </div>
+                            
+                            <div class="col-12 mb-3">
+                                <label for="allergies" class="form-label">Allergies</label>
+                                <textarea class="form-control" id="allergies" name="allergies" rows="2">{{ user_data.allergies or '' }}</textarea>
+                                <div class="form-text">List any allergies to medications, foods, or environmental factors.</div>
+                            </div>
+                            {% endif %}
+                            
+                            <!-- Location Information -->
+                            <div class="col-12 mb-3">
+                                <h5 class="border-bottom pb-2">Location Information</h5>
+                            </div>
+                            
+                            <div class="col-12 mb-3">
+                                <label for="address" class="form-label">Address</label>
+                                <input type="text" class="form-control" id="address" name="address" value="{{ user_data.address or '' }}">
+                            </div>
+                            
+                            <div class="col-md-4 mb-3">
+                                <label for="city" class="form-label">City</label>
+                                <input type="text" class="form-control" id="city" name="city" value="{{ user_data.city or '' }}">
+                            </div>
+                            
+                            <div class="col-md-4 mb-3">
+                                <label for="state" class="form-label">State</label>
+                                <input type="text" class="form-control" id="state" name="state" value="{{ user_data.state or '' }}">
+                            </div>
+                            
+                            <div class="col-md-4 mb-3">
+                                <label for="zip_code" class="form-label">ZIP Code</label>
+                                <input type="text" class="form-control" id="zip_code" name="zip_code" value="{{ user_data.zip_code or '' }}">
+                            </div>
+                            
+                            <div class="col-12 mb-3">
+                                <label class="form-label">Location on Map</label>
+                                <div id="location-picker-map" style="height: 300px;" data-lat="{{ user_data.latitude or '' }}" data-lng="{{ user_data.longitude or '' }}"></div>
+                                <p id="coordinates-display" class="form-text mt-2">
+                                    {% if user_data.latitude and user_data.longitude %}
+                                    Selected coordinates: {{ user_data.latitude }}, {{ user_data.longitude }}
+                                    {% else %}
+                                    Click on the map to select your location
+                                    {% endif %}
+                                </p>
+                                <!-- Hidden fields to store coordinates -->
+                                <input type="hidden" id="latitude" name="latitude" value="{{ user_data.latitude or '' }}">
+                                <input type="hidden" id="longitude" name="longitude" value="{{ user_data.longitude or '' }}">
+                            </div>
+                            
+                            <div class="col-12 mb-3">
+                                <h5 class="border-bottom pb-2">Security</h5>
+                            </div>
+                            
+                            <div class="col-md-4 mb-3">
+                                <label for="current_password" class="form-label">Current Password</label>
+                                <input type="password" class="form-control" id="current_password" name="current_password">
+                                <div class="form-text">Enter only if changing password</div>
+                            </div>
+                            
+                            <div class="col-md-4 mb-3">
+                                <label for="new_password" class="form-label">New Password</label>
+                                <input type="password" class="form-control" id="new_password" name="new_password">
+                            </div>
+                            
+                            <div class="col-md-4 mb-3">
+                                <label for="confirm_new_password" class="form-label">Confirm New Password</label>
+                                <input type="password" class="form-control" id="confirm_new_password" name="confirm_new_password">
+                            </div>
+                            
+                            <div class="col-12">
+                                <div class="d-grid">
+                                    <button type="submit" class="btn btn-primary" id="update-profile-btn">
+                                        <i class="fas fa-save me-2"></i>Save Changes
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Profile Sidebar -->
+        <div class="col-lg-4">
+            <div class="card border-0 shadow-lg mb-4 fade-in">
+                <div class="card-header bg-info text-white">
+                    <h5 class="mb-0"><i class="fas fa-info-circle me-2"></i>Profile Information</h5>
+                </div>
+                <div class="card-body">
+                    <p>Your profile information helps us provide you with better service and personalized healthcare recommendations.</p>
+                    
+                    <div class="alert alert-primary">
+                        <div class="d-flex">
+                            <div class="flex-shrink-0">
+                                <i class="fas fa-map-marker-alt fa-2x"></i>
+                            </div>
+                            <div class="flex-grow-1 ms-3">
+                                <h5 class="alert-heading">Location Services</h5>
+                                <p class="mb-0">Adding your location helps us connect you with nearby healthcare professionals.</p>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    {% if user_type == 'patient' %}
+                    <div class="alert alert-success">
+                        <div class="d-flex">
+                            <div class="flex-shrink-0">
+                                <i class="fas fa-file-medical fa-2x"></i>
+                            </div>
+                            <div class="flex-grow-1 ms-3">
+                                <h5 class="alert-heading">Medical History</h5>
+                                <p class="mb-0">Your medical history helps doctors provide more accurate care and recommendations.</p>
+                            </div>
+                        </div>
+                    </div>
+                    {% else %}
+                    <div class="alert alert-success">
+                        <div class="d-flex">
+                            <div class="flex-shrink-0">
+                                <i class="fas fa-user-md fa-2x"></i>
+                            </div>
+                            <div class="flex-grow-1 ms-3">
+                                <h5 class="alert-heading">Professional Details</h5>
+                                <p class="mb-0">Complete your professional profile to help patients find you more easily.</p>
+                            </div>
+                        </div>
+                    </div>
+                    {% endif %}
+                    
+                    <div class="alert alert-warning">
+                        <div class="d-flex">
+                            <div class="flex-shrink-0">
+                                <i class="fas fa-lock fa-2x"></i>
+                            </div>
+                            <div class="flex-grow-1 ms-3">
+                                <h5 class="alert-heading">Privacy & Security</h5>
+                                <p class="mb-0">Your health information is private and securely stored in accordance with healthcare privacy laws.</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Account Actions -->
+            <div class="card border-0 shadow-sm fade-in">
+                <div class="card-header bg-secondary text-white">
+                    <h5 class="mb-0"><i class="fas fa-cog me-2"></i>Account Settings</h5>
+                </div>
+                <div class="card-body">
+                    <div class="d-grid gap-2">
+                        <button class="btn btn-outline-primary" type="button" disabled>
+                            <i class="fas fa-bell me-2"></i>Notification Settings
+                        </button>
+                        <button class="btn btn-outline-info" type="button" disabled>
+                            <i class="fas fa-download me-2"></i>Download My Data
+                        </button>
+                        <a href="{{ url_for('logout') }}" class="btn btn-outline-danger">
+                            <i class="fas fa-sign-out-alt me-2"></i>Logout
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script src="{{ url_for('static', filename='js/location.js') }}"></script>
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        const profileForm = document.getElementById('profile-form');
+        const updateProfileBtn = document.getElementById('update-profile-btn');
+        const alertsContainer = document.getElementById('profile-form-alerts');
+        
+        profileForm.addEventListener('submit', function(e) {
+            e.preventDefault();
+            
+            // Validate password fields if user is updating password
+            const currentPassword = document.getElementById('current_password').value;
+            const newPassword = document.getElementById('new_password').value;
+            const confirmNewPassword = document.getElementById('confirm_new_password').value;
+            
+            if (newPassword || confirmNewPassword) {
+                if (!currentPassword) {
+                    showAlert('Please enter your current password to change your password.', 'danger');
+                    return;
+                }
+                
+                if (newPassword !== confirmNewPassword) {
+                    showAlert('New passwords do not match.', 'danger');
+                    return;
+                }
+            }
+            
+            // Show loading state
+            updateProfileBtn.disabled = true;
+            updateProfileBtn.innerHTML = '<i class="fas fa-spinner fa-spin me-2"></i>Saving...';
+            
+            // Collect form data
+            const formData = {
+                name: document.getElementById('name').value,
+                phone: document.getElementById('phone').value,
+                address: document.getElementById('address').value,
+                city: document.getElementById('city').value,
+                state: document.getElementById('state').value,
+                zip_code: document.getElementById('zip_code').value,
+                latitude: document.getElementById('latitude').value || null,
+                longitude: document.getElementById('longitude').value || null
+            };
+            
+            // Add user type specific fields
+            {% if user_type == 'doctor' %}
+            formData.specialization = document.getElementById('specialization').value;
+            formData.bio = document.getElementById('bio').value;
+            {% else %}
+            const dobInput = document.getElementById('dob').value;
+            formData.dob = dobInput ? dobInput : null;
+            formData.gender = document.getElementById('gender').value;
+            formData.medical_history = document.getElementById('medical_history').value;
+            formData.allergies = document.getElementById('allergies').value;
+            {% endif %}
+            
+            // Add password change fields if provided
+            if (currentPassword) {
+                formData.current_password = currentPassword;
+                formData.new_password = newPassword;
+            }
+            
+            // Send API request
+            fetch('/api/profile', {
+                method: 'PUT',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify(formData)
+            })
+            .then(response => response.json())
+            .then(data => {
+                updateProfileBtn.disabled = false;
+                updateProfileBtn.innerHTML = '<i class="fas fa-save me-2"></i>Save Changes';
+                
+                if (data.success) {
+                    showAlert('Profile updated successfully!', 'success');
+                    // Clear password fields
+                    document.getElementById('current_password').value = '';
+                    document.getElementById('new_password').value = '';
+                    document.getElementById('confirm_new_password').value = '';
+                } else {
+                    showAlert(data.message || 'An error occurred while updating profile.', 'danger');
+                }
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                updateProfileBtn.disabled = false;
+                updateProfileBtn.innerHTML = '<i class="fas fa-save me-2"></i>Save Changes';
+                showAlert('An error occurred while updating profile.', 'danger');
+            });
+        });
+        
+        function showAlert(message, type) {
+            const alertHTML = `
+                <div class="alert alert-${type} alert-dismissible fade show" role="alert">
+                    ${message}
+                    <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                </div>
+            `;
+            
+            alertsContainer.innerHTML = alertHTML;
+            
+            // Scroll to alert
+            alertsContainer.scrollIntoView({ behavior: 'smooth' });
+        }
+    });
+</script>
+{% endblock %}

@@ -1,0 +1,403 @@
+{% extends 'base.html' %}
+
+{% block title %}Dashboard - HealthConnect{% endblock %}
+
+{% block content %}
+<div class="container py-4">
+    <!-- Welcome Header -->
+    <div class="profile-header mb-4 fade-in">
+        <div class="row align-items-center">
+            <div class="col-md-2 mb-3 mb-md-0 text-center">
+                <div class="rounded-circle bg-light d-inline-flex align-items-center justify-content-center" style="width: 100px; height: 100px;">
+                    {% if user_type == 'doctor' %}
+                    <i class="fas fa-user-md fa-3x text-primary"></i>
+                    {% else %}
+                    <i class="fas fa-user fa-3x text-primary"></i>
+                    {% endif %}
+                </div>
+            </div>
+            <div class="col-md-10">
+                <h2 class="mb-1">Welcome, {{ user_data.name }}</h2>
+                <p class="mb-0">
+                    {% if user_type == 'doctor' %}
+                    <span class="badge bg-info">Doctor</span> 
+                    <span class="text-light">{{ user_data.specialization }}</span>
+                    {% else %}
+                    <span class="badge bg-info">Patient</span>
+                    {% endif %}
+                </p>
+            </div>
+        </div>
+    </div>
+
+    <!-- Quick Stats -->
+    <div class="row mb-4">
+        {% if user_type == 'doctor' %}
+        <!-- Doctor Stats -->
+        <div class="col-md-4 mb-3">
+            <div class="stats-card card bg-primary text-white">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <div>
+                            <h6 class="card-subtitle mb-2">Upcoming Appointments</h6>
+                            <h2 class="card-title mb-0">{{ appointments|length }}</h2>
+                        </div>
+                        <i class="fas fa-calendar-check fa-3x opacity-50"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-4 mb-3">
+            <div class="stats-card card bg-info text-white">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <div>
+                            <h6 class="card-subtitle mb-2">Total Patients</h6>
+                            <h2 class="card-title mb-0">
+                                <!-- This would be dynamic in a real implementation -->
+                                {{ appointments|map(attribute='patient_id')|list|unique|count if appointments else 0 }}
+                            </h2>
+                        </div>
+                        <i class="fas fa-users fa-3x opacity-50"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-4 mb-3">
+            <div class="stats-card card bg-success text-white">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <div>
+                            <h6 class="card-subtitle mb-2">Completed Appointments</h6>
+                            <h2 class="card-title mb-0">
+                                <!-- This would be dynamic in a real implementation -->
+                                0
+                            </h2>
+                        </div>
+                        <i class="fas fa-check-circle fa-3x opacity-50"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+        {% else %}
+        <!-- Patient Stats -->
+        <div class="col-md-4 mb-3">
+            <div class="stats-card card bg-primary text-white">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <div>
+                            <h6 class="card-subtitle mb-2">Upcoming Appointments</h6>
+                            <h2 class="card-title mb-0">{{ appointments|length }}</h2>
+                        </div>
+                        <i class="fas fa-calendar-check fa-3x opacity-50"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-4 mb-3">
+            <div class="stats-card card bg-info text-white">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <div>
+                            <h6 class="card-subtitle mb-2">Symptom Checks</h6>
+                            <h2 class="card-title mb-0">
+                                {% if symptom_checks is defined %}
+                                {{ symptom_checks|length }}
+                                {% else %}
+                                0
+                                {% endif %}
+                            </h2>
+                        </div>
+                        <i class="fas fa-stethoscope fa-3x opacity-50"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-4 mb-3">
+            <div class="stats-card card bg-success text-white">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <div>
+                            <h6 class="card-subtitle mb-2">Your Doctors</h6>
+                            <h2 class="card-title mb-0">
+                                <!-- This would be dynamic in a real implementation -->
+                                {{ appointments|map(attribute='doctor_id')|list|unique|count if appointments else 0 }}
+                            </h2>
+                        </div>
+                        <i class="fas fa-user-md fa-3x opacity-50"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+        {% endif %}
+    </div>
+
+    <!-- Main Dashboard Content -->
+    <div class="row g-4">
+        <!-- Left Column -->
+        <div class="col-lg-8">
+            <!-- Upcoming Appointments Section -->
+            <div class="card border-0 shadow-sm mb-4 fade-in">
+                <div class="card-header bg-primary text-white d-flex justify-content-between align-items-center">
+                    <h5 class="mb-0"><i class="fas fa-calendar-alt me-2"></i> Upcoming Appointments</h5>
+                    <a href="{{ url_for('appointments') }}" class="btn btn-sm btn-outline-light">View All</a>
+                </div>
+                <div class="card-body p-0">
+                    {% if appointments %}
+                    <div class="table-responsive">
+                        <table class="table table-hover mb-0">
+                            <thead>
+                                <tr>
+                                    <th>Date</th>
+                                    {% if user_type == 'doctor' %}
+                                    <th>Patient</th>
+                                    {% else %}
+                                    <th>Doctor</th>
+                                    {% endif %}
+                                    <th>Time</th>
+                                    <th>Status</th>
+                                    <th>Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for appointment in appointments %}
+                                <tr>
+                                    <td>{{ appointment.date.strftime('%b %d, %Y') if appointment.date }}</td>
+                                    {% if user_type == 'doctor' %}
+                                    <td>{{ appointment.patient.name }}</td>
+                                    {% else %}
+                                    <td>{{ appointment.doctor.name }}</td>
+                                    {% endif %}
+                                    <td>{{ appointment.time.strftime('%-I:%M %p') if appointment.time }}</td>
+                                    <td>
+                                        {% if appointment.status == 'scheduled' %}
+                                        <span class="badge text-bg-info">Scheduled</span>
+                                        {% elif appointment.status == 'completed' %}
+                                        <span class="badge text-bg-success">Completed</span>
+                                        {% elif appointment.status == 'cancelled' %}
+                                        <span class="badge text-bg-danger">Cancelled</span>
+                                        {% endif %}
+                                    </td>
+                                    <td>
+                                        {% if appointment.status == 'scheduled' %}
+                                        <div class="btn-group btn-group-sm">
+                                            {% if user_type == 'doctor' %}
+                                            <button class="btn btn-sm btn-outline-success appointment-status-btn" data-appointment-id="{{ appointment.id }}" data-status="completed">
+                                                <i class="fas fa-check"></i> Complete
+                                            </button>
+                                            {% endif %}
+                                            <button class="btn btn-sm btn-outline-danger appointment-status-btn" data-appointment-id="{{ appointment.id }}" data-status="cancelled">
+                                                <i class="fas fa-times"></i> Cancel
+                                            </button>
+                                        </div>
+                                        {% else %}
+                                        <span class="text-muted">No actions available</span>
+                                        {% endif %}
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                    {% else %}
+                    <div class="text-center py-5">
+                        <i class="fas fa-calendar-alt fa-3x text-muted mb-3"></i>
+                        <h5>No upcoming appointments</h5>
+                        {% if user_type == 'patient' %}
+                        <a href="{{ url_for('book_appointment') }}" class="btn btn-primary mt-2">
+                            <i class="fas fa-plus-circle me-2"></i> Book an Appointment
+                        </a>
+                        {% endif %}
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+
+            {% if user_type == 'patient' and symptom_checks is defined and symptom_checks %}
+            <!-- Recent Symptom Checks Section (For Patients) -->
+            <div class="card border-0 shadow-sm mb-4 fade-in">
+                <div class="card-header bg-info text-white d-flex justify-content-between align-items-center">
+                    <h5 class="mb-0"><i class="fas fa-stethoscope me-2"></i> Recent Symptom Checks</h5>
+                    <a href="{{ url_for('symptom_checker') }}" class="btn btn-sm btn-outline-light">New Check</a>
+                </div>
+                <div class="card-body">
+                    {% for check in symptom_checks %}
+                    <div class="card mb-3">
+                        <div class="card-header bg-light d-flex justify-content-between">
+                            <span><i class="fas fa-calendar me-2"></i> {{ check.created_at.strftime('%b %d, %Y') }}</span>
+                            <span class="badge bg-primary">{{ check.created_at.strftime('%-I:%M %p') }}</span>
+                        </div>
+                        <div class="card-body">
+                            <h6 class="card-subtitle mb-2 text-muted">Reported Symptoms:</h6>
+                            <p>{{ check.symptoms }}</p>
+                            
+                            {% if check.ai_analysis %}
+                            <button class="btn btn-sm btn-outline-info" type="button" data-bs-toggle="collapse" data-bs-target="#analysis{{ check.id }}" aria-expanded="false">
+                                <i class="fas fa-chart-line me-1"></i> View Analysis
+                            </button>
+                            
+                            <div class="collapse mt-3" id="analysis{{ check.id }}">
+                                <div class="card card-body bg-light">
+                                    {% for line in check.ai_analysis.split('\n') %}
+                                        {% if "Possible Conditions:" in line %}
+                                            <h6 class="text-primary mt-2"><i class="fas fa-stethoscope me-1"></i> {{ line }}</h6>
+                                        {% elif "Key Symptoms Analysis:" in line %}
+                                            <h6 class="text-info mt-2"><i class="fas fa-list-ul me-1"></i> {{ line }}</h6>
+                                        {% elif "Risk Factors:" in line %}
+                                            <h6 class="text-warning mt-2"><i class="fas fa-exclamation-triangle me-1"></i> {{ line }}</h6>
+                                        {% elif "Recommended Next Steps:" in line %}
+                                            <h6 class="text-success mt-2"><i class="fas fa-clipboard-check me-1"></i> {{ line }}</h6>
+                                        {% elif "Warning Signs:" in line %}
+                                            <h6 class="text-danger mt-2"><i class="fas fa-exclamation-circle me-1"></i> {{ line }}</h6>
+                                        {% elif "Preventive Measures:" in line %}
+                                            <h6 class="text-secondary mt-2"><i class="fas fa-shield-alt me-1"></i> {{ line }}</h6>
+                                        {% elif line.strip() %}
+                                            <p class="mb-1">{{ line }}</p>
+                                        {% endif %}
+                                    {% endfor %}
+                                </div>
+                            </div>
+                            {% endif %}
+                        </div>
+                        <div class="card-footer">
+                            <a href="{{ url_for('doctor_finder') }}" class="btn btn-sm btn-primary">
+                                <i class="fas fa-user-md me-1"></i> Find a Doctor
+                            </a>
+                        </div>
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
+            {% endif %}
+        </div>
+
+        <!-- Right Column -->
+        <div class="col-lg-4">
+            <!-- Quick Actions Card -->
+            <div class="card border-0 shadow-sm mb-4 fade-in">
+                <div class="card-header bg-primary text-white">
+                    <h5 class="mb-0"><i class="fas fa-bolt me-2"></i> Quick Actions</h5>
+                </div>
+                <div class="card-body">
+                    <div class="d-grid gap-3">
+                        {% if user_type == 'patient' %}
+                        <a href="{{ url_for('symptom_checker') }}" class="btn btn-outline-primary">
+                            <i class="fas fa-stethoscope me-2"></i> Check Symptoms
+                        </a>
+                        <a href="{{ url_for('doctor_finder') }}" class="btn btn-outline-info">
+                            <i class="fas fa-user-md me-2"></i> Find Doctors
+                        </a>
+                        <a href="{{ url_for('book_appointment') }}" class="btn btn-outline-success">
+                            <i class="fas fa-calendar-plus me-2"></i> Book Appointment
+                        </a>
+                        {% else %}
+                        <a href="{{ url_for('appointments') }}" class="btn btn-outline-primary">
+                            <i class="fas fa-calendar-alt me-2"></i> Manage Appointments
+                        </a>
+                        <a href="{{ url_for('profile') }}" class="btn btn-outline-info">
+                            <i class="fas fa-user-edit me-2"></i> Update Profile
+                        </a>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+
+            <!-- Profile Summary Card -->
+            <div class="card border-0 shadow-sm mb-4 fade-in">
+                <div class="card-header bg-info text-white">
+                    <h5 class="mb-0"><i class="fas fa-id-card me-2"></i> Profile Summary</h5>
+                </div>
+                <div class="card-body">
+                    <div class="mb-3">
+                        <h6 class="card-subtitle mb-2 text-muted">Contact Information</h6>
+                        <p class="mb-1"><i class="fas fa-envelope me-2"></i> {{ session.get('user_email') }}</p>
+                        {% if user_data.phone %}
+                        <p class="mb-1"><i class="fas fa-phone me-2"></i> {{ user_data.phone }}</p>
+                        {% endif %}
+                    </div>
+
+                    {% if user_type == 'doctor' %}
+                    <div class="mb-3">
+                        <h6 class="card-subtitle mb-2 text-muted">Specialization</h6>
+                        <p>{{ user_data.specialization }}</p>
+                    </div>
+                    {% if user_data.address %}
+                    <div class="mb-3">
+                        <h6 class="card-subtitle mb-2 text-muted">Location</h6>
+                        <p class="mb-0">
+                            <i class="fas fa-map-marker-alt me-2"></i>
+                            {{ user_data.address }}{% if user_data.city %}, {{ user_data.city }}{% endif %}{% if user_data.state %}, {{ user_data.state }}{% endif %}
+                        </p>
+                    </div>
+                    {% endif %}
+                    {% else %}
+                    {% if user_data.gender or user_data.dob %}
+                    <div class="mb-3">
+                        <h6 class="card-subtitle mb-2 text-muted">Personal Details</h6>
+                        {% if user_data.gender %}
+                        <p class="mb-1"><i class="fas fa-venus-mars me-2"></i> {{ user_data.gender }}</p>
+                        {% endif %}
+                        {% if user_data.dob %}
+                        <p class="mb-1"><i class="fas fa-birthday-cake me-2"></i> {{ user_data.dob.strftime('%B %d, %Y') }}</p>
+                        {% endif %}
+                    </div>
+                    {% endif %}
+                    {% endif %}
+
+                    <div class="text-center mt-3">
+                        <a href="{{ url_for('profile') }}" class="btn btn-sm btn-outline-primary">
+                            <i class="fas fa-user-edit me-1"></i> Edit Profile
+                        </a>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Health Tips Card (for patients) -->
+            {% if user_type == 'patient' %}
+            <div class="card border-0 shadow-sm fade-in">
+                <div class="card-header bg-success text-white">
+                    <h5 class="mb-0"><i class="fas fa-heart me-2"></i> Health Tips</h5>
+                </div>
+                <div class="card-body">
+                    <div id="health-tip-carousel" class="carousel slide" data-bs-ride="carousel">
+                        <div class="carousel-inner">
+                            <div class="carousel-item active">
+                                <h6 class="card-subtitle mb-2 text-success">Stay Hydrated</h6>
+                                <p class="card-text">Drink at least 8 glasses of water daily to maintain proper hydration and support overall health.</p>
+                            </div>
+                            <div class="carousel-item">
+                                <h6 class="card-subtitle mb-2 text-success">Regular Exercise</h6>
+                                <p class="card-text">Aim for at least 30 minutes of moderate exercise 5 days a week to improve cardiovascular health.</p>
+                            </div>
+                            <div class="carousel-item">
+                                <h6 class="card-subtitle mb-2 text-success">Balanced Diet</h6>
+                                <p class="card-text">Include a variety of fruits, vegetables, whole grains, and lean proteins in your daily meals.</p>
+                            </div>
+                            <div class="carousel-item">
+                                <h6 class="card-subtitle mb-2 text-success">Adequate Sleep</h6>
+                                <p class="card-text">Get 7-9 hours of quality sleep each night to support immune function and mental health.</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        // Initialize health tips carousel with auto-slide
+        const healthTipCarousel = document.getElementById('health-tip-carousel');
+        if (healthTipCarousel) {
+            const carousel = new bootstrap.Carousel(healthTipCarousel, {
+                interval: 8000,
+                wrap: true
+            });
+        }
+    });
+</script>
+{% endblock %}

@@ -1,0 +1,62 @@
+{% extends 'base.html' %}
+
+{% block title %}Error {{ code }} - HealthConnect{% endblock %}
+
+{% block content %}
+<div class="container py-5">
+    <div class="row justify-content-center">
+        <div class="col-md-8 text-center">
+            <div class="error-container fade-in">
+                <div class="mb-4">
+                    {% if code == 404 %}
+                    <i class="fas fa-search fa-5x text-secondary"></i>
+                    {% elif code == 500 %}
+                    <i class="fas fa-exclamation-triangle fa-5x text-danger"></i>
+                    {% else %}
+                    <i class="fas fa-exclamation-circle fa-5x text-warning"></i>
+                    {% endif %}
+                </div>
+                
+                <h1 class="display-1 fw-bold text-primary">{{ code }}</h1>
+                <h2 class="mb-4">
+                    {% if code == 404 %}
+                    Page Not Found
+                    {% elif code == 500 %}
+                    Server Error
+                    {% else %}
+                    Something Went Wrong
+                    {% endif %}
+                </h2>
+                
+                <p class="lead mb-4">
+                    {% if code == 404 %}
+                    We couldn't find the page you were looking for. The page may have been moved, deleted, or never existed.
+                    {% elif code == 500 %}
+                    Something went wrong on our servers. We're working to fix the issue as soon as possible.
+                    {% else %}
+                    {{ message }}
+                    {% endif %}
+                </p>
+                
+                <div class="d-flex justify-content-center gap-3">
+                    <a href="{{ url_for('home') }}" class="btn btn-primary">
+                        <i class="fas fa-home me-2"></i>Go to Homepage
+                    </a>
+                    <a href="javascript:history.back()" class="btn btn-outline-secondary">
+                        <i class="fas fa-arrow-left me-2"></i>Go Back
+                    </a>
+                </div>
+            </div>
+            
+            <div class="card mt-5 border-0 shadow-sm fade-in">
+                <div class="card-body">
+                    <h4>Need Help?</h4>
+                    <p>If you continue to experience issues, please contact our support team:</p>
+                    <p><i class="fas fa-envelope me-2"></i>support@healthconnect.com</p>
+                    <p class="mb-0"><i class="fas fa-phone me-2"></i>(123) 456-7890</p>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

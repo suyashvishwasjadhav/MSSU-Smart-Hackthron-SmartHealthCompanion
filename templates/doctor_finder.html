@@ -1,0 +1,190 @@
+{% extends 'base.html' %}
+
+{% block title %}Find Doctors - HealthConnect{% endblock %}
+
+{% block content %}
+<div class="container py-4">
+    <!-- Header Section -->
+    <div class="row mb-4">
+        <div class="col-lg-8 mx-auto text-center">
+            <h2 class="mb-3 fade-in"><i class="fas fa-user-md me-2"></i>Find Healthcare Professionals</h2>
+            <p class="lead fade-in">Connect with qualified doctors near you based on specialization and location.</p>
+        </div>
+    </div>
+
+    <!-- Search and Filter Section -->
+    <div class="row mb-4">
+        <div class="col-lg-12">
+            <div class="card border-0 shadow-sm fade-in">
+                <div class="card-body p-4">
+                    <div class="row">
+                        <div class="col-md-5 mb-3 mb-md-0">
+                            <label for="specialization-filter" class="form-label">Filter by Specialization</label>
+                            <select class="form-select" id="specialization-filter">
+                                <option value="" selected>All Specializations</option>
+                                <option value="cardiologist" {% if specialization == 'cardiologist' %}selected{% endif %}>Cardiologist</option>
+                                <option value="dermatologist" {% if specialization == 'dermatologist' %}selected{% endif %}>Dermatologist</option>
+                                <option value="endocrinologist" {% if specialization == 'endocrinologist' %}selected{% endif %}>Endocrinologist</option>
+                                <option value="gastroenterologist" {% if specialization == 'gastroenterologist' %}selected{% endif %}>Gastroenterologist</option>
+                                <option value="neurologist" {% if specialization == 'neurologist' %}selected{% endif %}>Neurologist</option>
+                                <option value="obstetrician" {% if specialization == 'obstetrician' %}selected{% endif %}>Obstetrician/Gynecologist</option>
+                                <option value="oncologist" {% if specialization == 'oncologist' %}selected{% endif %}>Oncologist</option>
+                                <option value="ophthalmologist" {% if specialization == 'ophthalmologist' %}selected{% endif %}>Ophthalmologist</option>
+                                <option value="orthopedic" {% if specialization == 'orthopedic' %}selected{% endif %}>Orthopedic Surgeon</option>
+                                <option value="pediatrician" {% if specialization == 'pediatrician' %}selected{% endif %}>Pediatrician</option>
+                                <option value="psychiatrist" {% if specialization == 'psychiatrist' %}selected{% endif %}>Psychiatrist</option>
+                                <option value="general" {% if specialization == 'general' %}selected{% endif %}>General Practitioner</option>
+                            </select>
+                        </div>
+                        <div class="col-md-5 mb-3 mb-md-0">
+                            <label class="form-label">Find doctors near you</label>
+                            <div id="location-alerts"></div>
+                            <button id="get-user-location" class="btn btn-primary w-100">
+                                <i class="fas fa-map-marker-alt me-2"></i> Use my location
+                            </button>
+                        </div>
+                        <div class="col-md-2 d-flex align-items-end">
+                            <a href="{{ url_for('doctor_finder') }}" class="btn btn-outline-secondary w-100">
+                                <i class="fas fa-sync-alt me-2"></i> Reset
+                            </a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Map and Doctor Listing -->
+    <div class="row">
+        <!-- Map Section -->
+        <div class="col-lg-5 mb-4">
+            <div class="card border-0 shadow-lg h-100 fade-in">
+                <div class="card-header bg-primary text-white">
+                    <h5 class="mb-0"><i class="fas fa-map-marked-alt me-2"></i>Doctor Locations</h5>
+                </div>
+                <div class="card-body p-0">
+                    <div id="doctor-map" style="height: 500px;"></div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Doctor Listing Section -->
+        <div class="col-lg-7">
+            <div class="card border-0 shadow-lg fade-in">
+                <div class="card-header bg-info text-white d-flex justify-content-between align-items-center">
+                    <h5 class="mb-0"><i class="fas fa-list me-2"></i>Available Doctors</h5>
+                    <span class="badge bg-light text-dark">{{ doctors|length }} Found</span>
+                </div>
+                <div class="card-body p-0">
+                    {% if doctors %}
+                    <div class="doctor-cards-container">
+                        {% for doctor in doctors %}
+                        <div class="doctor-card p-3 border-bottom" data-specialization="{{ doctor.specialization|lower }}" data-lat="{{ doctor.latitude or '' }}" data-lng="{{ doctor.longitude or '' }}">
+                            <div class="row">
+                                <div class="col-md-2 mb-3 mb-md-0 text-center">
+                                    <div class="rounded-circle bg-light d-inline-flex align-items-center justify-content-center" style="width: 80px; height: 80px;">
+                                        <i class="fas fa-user-md fa-2x text-primary"></i>
+                                    </div>
+                                </div>
+                                <div class="col-md-7 mb-3 mb-md-0">
+                                    <h5 class="mb-1">{{ doctor.name }}</h5>
+                                    <p class="mb-1 text-muted">{{ doctor.specialization }}</p>
+                                    {% if doctor.city or doctor.state %}
+                                    <p class="mb-1">
+                                        <i class="fas fa-map-marker-alt me-1 text-secondary"></i>
+                                        {% if doctor.city %}{{ doctor.city }}{% endif %}
+                                        {% if doctor.city and doctor.state %}, {% endif %}
+                                        {% if doctor.state %}{{ doctor.state }}{% endif %}
+                                    </p>
+                                    {% endif %}
+                                    <p class="doctor-distance d-none mb-1 text-success">
+                                        <i class="fas fa-route me-1"></i> <span>0.0 km away</span>
+                                    </p>
+                                </div>
+                                <div class="col-md-3 text-md-end">
+                                    <a href="{{ url_for('book_appointment', doctor_id=doctor.id) }}" class="btn btn-primary">
+                                        <i class="fas fa-calendar-plus me-md-1"></i> <span class="d-none d-md-inline">Book</span>
+                                    </a>
+                                    {% if doctor.bio %}
+                                    <button class="btn btn-outline-info mt-2" type="button" data-bs-toggle="collapse" data-bs-target="#doctorBio{{ doctor.id }}" aria-expanded="false">
+                                        <i class="fas fa-info-circle me-md-1"></i> <span class="d-none d-md-inline">Info</span>
+                                    </button>
+                                    {% endif %}
+                                </div>
+                            </div>
+                            {% if doctor.bio %}
+                            <div class="collapse mt-3" id="doctorBio{{ doctor.id }}">
+                                <div class="card card-body bg-light">
+                                    <h6>About Dr. {{ doctor.name.split(' ')|last }}</h6>
+                                    <p class="mb-0">{{ doctor.bio }}</p>
+                                </div>
+                            </div>
+                            {% endif %}
+                        </div>
+                        {% endfor %}
+                    </div>
+                    {% else %}
+                    <div class="text-center py-5">
+                        <i class="fas fa-user-md fa-3x text-muted mb-3"></i>
+                        <h5>No doctors found</h5>
+                        <p>Try adjusting your search criteria</p>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Recommendations Section -->
+    <div class="row mt-4">
+        <div class="col-12">
+            <div class="card border-0 shadow-sm fade-in">
+                <div class="card-header bg-success text-white">
+                    <h5 class="mb-0"><i class="fas fa-lightbulb me-2"></i>Why Choose a Specialist?</h5>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-md-4 mb-3">
+                            <div class="d-flex">
+                                <div class="flex-shrink-0">
+                                    <i class="fas fa-graduation-cap fa-2x text-success"></i>
+                                </div>
+                                <div class="flex-grow-1 ms-3">
+                                    <h5>Specialized Expertise</h5>
+                                    <p class="mb-0">Specialists have advanced training in specific areas of medicine, allowing for more targeted diagnosis and treatment.</p>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-4 mb-3">
+                            <div class="d-flex">
+                                <div class="flex-shrink-0">
+                                    <i class="fas fa-procedures fa-2x text-success"></i>
+                                </div>
+                                <div class="flex-grow-1 ms-3">
+                                    <h5>Complex Condition Management</h5>
+                                    <p class="mb-0">Specialists are equipped to handle complex medical conditions that require specialized care and monitoring.</p>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-4 mb-3">
+                            <div class="d-flex">
+                                <div class="flex-shrink-0">
+                                    <i class="fas fa-microscope fa-2x text-success"></i>
+                                </div>
+                                <div class="flex-grow-1 ms-3">
+                                    <h5>Latest Treatment Options</h5>
+                                    <p class="mb-0">Specialists stay updated with the latest advancements and technologies in their field of expertise.</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script src="{{ url_for('static', filename='js/location.js') }}"></script>
+{% endblock %}

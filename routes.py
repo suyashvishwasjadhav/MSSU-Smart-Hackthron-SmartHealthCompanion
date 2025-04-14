@@ -1,0 +1,613 @@
+from flask import render_template, request, jsonify, redirect, url_for, session, flash
+from functools import wraps
+import google.generativeai as genai
+import os
+import json
+from datetime import datetime, timedelta
+from app import app, db
+from models import User, Doctor, Patient, Appointment, SymptomCheck
+from config import GOOGLE_API_KEY
+import logging
+from sqlalchemy.exc import SQLAlchemyError
+from werkzeug.security import generate_password_hash, check_password_hash
+
+# Configure Gemini API
+genai.configure(api_key=GOOGLE_API_KEY)
+model = genai.GenerativeModel('gemini-2.0-flash')
+
+# Login required decorator
+def login_required(f):
+    @wraps(f)
+    def decorated_function(*args, **kwargs):
+        if 'user_id' not in session:
+            flash('Please log in to access this page', 'warning')
+            return redirect(url_for('login'))
+        return f(*args, **kwargs)
+    return decorated_function
+
+# Doctor required decorator
+def doctor_required(f):
+    @wraps(f)
+    def decorated_function(*args, **kwargs):
+        if 'user_type' not in session or session['user_type'] != 'doctor':
+            flash('Access denied. Doctor privileges required.', 'danger')
+            return redirect(url_for('dashboard'))
+        return f(*args, **kwargs)
+    return decorated_function
+
+# Patient required decorator
+def patient_required(f):
+    @wraps(f)
+    def decorated_function(*args, **kwargs):
+        if 'user_type' not in session or session['user_type'] != 'patient':
+            flash('Access denied. Patient privileges required.', 'danger')
+            return redirect(url_for('dashboard'))
+        return f(*args, **kwargs)
+    return decorated_function
+
+# Home route
+@app.route('/')
+def home():
+    if 'user_id' in session:
+        return redirect(url_for('dashboard'))
+    return render_template('index.html')
+
+# Login route
+@app.route('/login', methods=['GET', 'POST'])
+def login():
+    if 'user_id' in session:
+        return redirect(url_for('dashboard'))
+    
+    if request.method == 'POST':
+        email = request.form.get('email')
+        password = request.form.get('password')
+        
+        user = User.query.filter_by(email=email).first()
+        
+        if user and user.check_password(password):
+            session['user_id'] = user.id
+            session['user_email'] = user.email
+            session['user_type'] = user.user_type
+            
+            flash(f'Welcome back!', 'success')
+            return redirect(url_for('dashboard'))
+        else:
+            flash('Invalid email or password', 'danger')
+    
+    return render_template('login.html')
+
+# Registration route
+@app.route('/register', methods=['GET', 'POST'])
+def register():
+    if 'user_id' in session:
+        return redirect(url_for('dashboard'))
+    
+    if request.method == 'POST':
+        email = request.form.get('email')
+        password = request.form.get('password')
+        confirm_password = request.form.get('confirm_password')
+        user_type = request.form.get('user_type')
+        name = request.form.get('name')
+        
+        # Basic validation
+        if not all([email, password, confirm_password, user_type, name]):
+            flash('All fields are required', 'danger')
+            return render_template('register.html')
+        
+        if password != confirm_password:
+            flash('Passwords do not match', 'danger')
+            return render_template('register.html')
+        
+        # Check if user already exists
+        existing_user = User.query.filter_by(email=email).first()
+        if existing_user:
+            flash('Email already registered', 'danger')
+            return render_template('register.html')
+        
+        try:
+            # Create new user
+            new_user = User(
+                email=email,
+                user_type=user_type
+            )
+            new_user.set_password(password)
+            db.session.add(new_user)
+            db.session.flush()  # Get the user ID without committing
+            
+            # Create doctor or patient profile
+            if user_type == 'doctor':
+                specialization = request.form.get('specialization')
+                if not specialization:
+                    flash('Specialization is required for doctors', 'danger')
+                    return render_template('register.html')
+                
+                new_doctor = Doctor(
+                    user_id=new_user.id,
+                    name=name,
+                    specialization=specialization
+                )
+                db.session.add(new_doctor)
+            else:
+                new_patient = Patient(
+                    user_id=new_user.id,
+                    name=name
+                )
+                db.session.add(new_patient)
+            
+            db.session.commit()
+            
+            # Log in the user
+            session['user_id'] = new_user.id
+            session['user_email'] = new_user.email
+            session['user_type'] = new_user.user_type
+            
+            flash('Registration successful!', 'success')
+            return redirect(url_for('dashboard'))
+            
+        except SQLAlchemyError as e:
+            db.session.rollback()
+            app.logger.error(f"Registration error: {str(e)}")
+            flash('An error occurred during registration. Please try again.', 'danger')
+    
+    return render_template('register.html')
+
+# Logout route
+@app.route('/logout')
+def logout():
+    session.clear()
+    flash('You have been logged out', 'info')
+    return redirect(url_for('home'))
+
+# Dashboard route
+@app.route('/dashboard')
+@login_required
+def dashboard():
+    user_id = session.get('user_id')
+    user_type = session.get('user_type')
+    
+    if user_type == 'doctor':
+        doctor = Doctor.query.filter_by(user_id=user_id).first()
+        if not doctor:
+            session.clear()
+            flash('Doctor profile not found', 'danger')
+            return redirect(url_for('login'))
+        
+        # Get upcoming appointments
+        upcoming_appointments = Appointment.query.filter_by(
+            doctor_id=doctor.id,
+            status='scheduled'
+        ).filter(
+            Appointment.date >= datetime.now().date()
+        ).order_by(
+            Appointment.date,
+            Appointment.time
+        ).limit(5).all()
+        
+        return render_template(
+            'dashboard.html',
+            user_data=doctor,
+            user_type=user_type,
+            appointments=upcoming_appointments
+        )
+    else:
+        patient = Patient.query.filter_by(user_id=user_id).first()
+        if not patient:
+            session.clear()
+            flash('Patient profile not found', 'danger')
+            return redirect(url_for('login'))
+        
+        # Get upcoming appointments
+        upcoming_appointments = Appointment.query.filter_by(
+            patient_id=patient.id,
+            status='scheduled'
+        ).filter(
+            Appointment.date >= datetime.now().date()
+        ).order_by(
+            Appointment.date,
+            Appointment.time
+        ).limit(5).all()
+        
+        # Get recent symptom checks
+        recent_checks = SymptomCheck.query.filter_by(
+            patient_id=patient.id
+        ).order_by(
+            SymptomCheck.created_at.desc()
+        ).limit(3).all()
+        
+        return render_template(
+            'dashboard.html',
+            user_data=patient,
+            user_type=user_type,
+            appointments=upcoming_appointments,
+            symptom_checks=recent_checks
+        )
+
+# Symptom checker route
+@app.route('/symptom-checker', methods=['GET', 'POST'])
+@login_required
+@patient_required
+def symptom_checker():
+    if request.method == 'POST':
+        try:
+            user_id = session.get('user_id')
+            patient = Patient.query.filter_by(user_id=user_id).first()
+            
+            if not patient:
+                return jsonify({
+                    'success': False,
+                    'message': 'Patient profile not found'
+                }), 404
+            
+            data = request.json
+            symptoms = data.get('symptoms', '')
+            age = data.get('age', '')
+            gender = data.get('gender', '')
+            duration = data.get('duration', '')
+            severity = data.get('severity', '')
+            medical_history = data.get('medical_history', '')
+            
+            prompt = f"""As a medical AI assistant, analyze the following patient information:
+
+Patient Information:
+- Age: {age}
+- Gender: {gender}
+- Symptoms: {symptoms}
+- Duration: {duration}
+- Severity: {severity}
+- Medical History: {medical_history}
+
+Please provide a comprehensive analysis with the following structure:
+
+Possible Conditions:
+[List each condition with confidence level and brief description]
+- Condition (High/Medium/Low confidence): Description and typical presentation
+
+Key Symptoms Analysis:
+- [Analyze each reported symptom and its significance]
+
+Risk Factors:
+- [List relevant risk factors based on patient's profile]
+
+Recommended Next Steps:
+1. [Immediate actions or self-care measures]
+2. [When to seek professional medical care]
+3. [Suggested medical tests or examinations]
+
+Warning Signs:
+- [List specific symptoms or changes that require immediate medical attention]
+
+Preventive Measures:
+1. [Lifestyle modifications]
+2. [Preventive actions]
+3. [General health recommendations]
+
+Note: This is an AI-generated analysis for informational purposes only. Please consult with a healthcare provider for proper medical diagnosis and treatment."""
+
+            response = model.generate_content(prompt)
+            
+            if not response or not response.text:
+                return jsonify({
+                    'success': False,
+                    'message': 'No response received from AI. Please try again.'
+                }), 500
+            
+            processed_response = response.text.replace("*", "").replace("•", "")
+            
+            sections = [
+                "Possible Conditions:",
+                "Key Symptoms Analysis:",
+                "Risk Factors:",
+                "Recommended Next Steps:",
+                "Warning Signs:",
+                "Preventive Measures:"
+            ]
+            
+            formatted_response = processed_response
+            for section in sections:
+                if section not in formatted_response:
+                    base_section = section.replace(":", "")
+                    formatted_response = formatted_response.replace(base_section, section)
+            
+            # Save the symptom check to database
+            new_check = SymptomCheck(
+                patient_id=patient.id,
+                symptoms=symptoms,
+                age=int(age) if age.isdigit() else None,
+                gender=gender,
+                duration=duration,
+                severity=severity,
+                medical_history=medical_history,
+                ai_analysis=formatted_response
+            )
+            db.session.add(new_check)
+            db.session.commit()
+            
+            return jsonify({
+                'success': True,
+                'analysis': formatted_response,
+                'check_id': new_check.id
+            })
+            
+        except Exception as e:
+            db.session.rollback()
+            app.logger.error(f"Symptom checker error: {str(e)}")
+            return jsonify({
+                'success': False,
+                'message': 'An error occurred while analyzing symptoms. Please try again.'
+            }), 500
+    
+    return render_template('symptom_checker.html')
+
+# Doctor finder route
+@app.route('/doctor-finder')
+@login_required
+@patient_required
+def doctor_finder():
+    specialization = request.args.get('specialization', '')
+    
+    # Get all doctors or filter by specialization
+    if specialization:
+        doctors_list = Doctor.query.filter(
+            Doctor.specialization.ilike(f'%{specialization}%')
+        ).all()
+    else:
+        doctors_list = Doctor.query.all()
+    
+    return render_template('doctor_finder.html', doctors=doctors_list, specialization=specialization)
+
+# Profile route
+@app.route('/profile', methods=['GET'])
+@login_required
+def profile():
+    user_id = session.get('user_id')
+    user_type = session.get('user_type')
+    
+    if user_type == 'doctor':
+        user_data = Doctor.query.filter_by(user_id=user_id).first()
+    else:
+        user_data = Patient.query.filter_by(user_id=user_id).first()
+    
+    if not user_data:
+        session.clear()
+        flash('Profile not found', 'danger')
+        return redirect(url_for('login'))
+    
+    return render_template('profile.html', user_type=user_type, user_data=user_data)
+
+# Update profile route
+@app.route('/api/profile', methods=['PUT'])
+@login_required
+def update_profile():
+    try:
+        user_id = session.get('user_id')
+        user_type = session.get('user_type')
+        data = request.json
+        
+        user = User.query.get(user_id)
+        if not user:
+            return jsonify({'success': False, 'message': 'User not found'}), 404
+        
+        # Update user data
+        if user_type == 'doctor':
+            doctor = Doctor.query.filter_by(user_id=user_id).first()
+            if doctor:
+                doctor.name = data.get('name', doctor.name)
+                doctor.phone = data.get('phone', doctor.phone)
+                doctor.specialization = data.get('specialization', doctor.specialization)
+                doctor.address = data.get('address', doctor.address)
+                doctor.city = data.get('city', doctor.city)
+                doctor.state = data.get('state', doctor.state)
+                doctor.zip_code = data.get('zip_code', doctor.zip_code)
+                doctor.bio = data.get('bio', doctor.bio)
+                
+                # Update latitude and longitude if provided
+                if 'latitude' in data and 'longitude' in data:
+                    doctor.latitude = data['latitude']
+                    doctor.longitude = data['longitude']
+        else:
+            patient = Patient.query.filter_by(user_id=user_id).first()
+            if patient:
+                patient.name = data.get('name', patient.name)
+                patient.phone = data.get('phone', patient.phone)
+                patient.address = data.get('address', patient.address)
+                patient.city = data.get('city', patient.city)
+                patient.state = data.get('state', patient.state)
+                patient.zip_code = data.get('zip_code', patient.zip_code)
+                patient.medical_history = data.get('medical_history', patient.medical_history)
+                patient.allergies = data.get('allergies', patient.allergies)
+                
+                # Parse and set date of birth if provided
+                if data.get('dob'):
+                    try:
+                        patient.dob = datetime.strptime(data['dob'], '%Y-%m-%d').date()
+                    except ValueError:
+                        pass
+                
+                # Update gender if provided
+                if data.get('gender'):
+                    patient.gender = data['gender']
+                
+                # Update latitude and longitude if provided
+                if 'latitude' in data and 'longitude' in data:
+                    patient.latitude = data['latitude']
+                    patient.longitude = data['longitude']
+        
+        # Update password if provided
+        if data.get('new_password') and data.get('current_password'):
+            if not user.check_password(data['current_password']):
+                return jsonify({'success': False, 'message': 'Current password is incorrect'}), 400
+            user.set_password(data['new_password'])
+        
+        db.session.commit()
+        return jsonify({'success': True, 'message': 'Profile updated successfully'})
+        
+    except SQLAlchemyError as e:
+        db.session.rollback()
+        app.logger.error(f"Profile update error: {str(e)}")
+        return jsonify({'success': False, 'message': 'An error occurred while updating profile'}), 500
+
+# Book appointment route
+@app.route('/book-appointment', methods=['GET', 'POST'])
+@login_required
+@patient_required
+def book_appointment():
+    user_id = session.get('user_id')
+    patient = Patient.query.filter_by(user_id=user_id).first()
+    
+    if not patient:
+        flash('Patient profile not found', 'danger')
+        return redirect(url_for('dashboard'))
+    
+    if request.method == 'POST':
+        try:
+            doctor_id = request.form.get('doctor_id')
+            date_str = request.form.get('date')
+            time_str = request.form.get('time')
+            reason = request.form.get('reason')
+            
+            # Validate input
+            if not all([doctor_id, date_str, time_str]):
+                flash('Doctor, date and time are required', 'danger')
+                return redirect(url_for('book_appointment'))
+            
+            # Parse date and time
+            appointment_date = datetime.strptime(date_str, '%Y-%m-%d').date()
+            appointment_time = datetime.strptime(time_str, '%H:%M').time()
+            
+            # Check if doctor exists
+            doctor = Doctor.query.get(doctor_id)
+            if not doctor:
+                flash('Selected doctor not found', 'danger')
+                return redirect(url_for('book_appointment'))
+            
+            # Create new appointment
+            new_appointment = Appointment(
+                doctor_id=doctor.id,
+                patient_id=patient.id,
+                date=appointment_date,
+                time=appointment_time,
+                status='scheduled',
+                reason=reason
+            )
+            
+            db.session.add(new_appointment)
+            db.session.commit()
+            
+            flash('Appointment booked successfully!', 'success')
+            return redirect(url_for('dashboard'))
+            
+        except ValueError:
+            flash('Invalid date or time format', 'danger')
+        except SQLAlchemyError as e:
+            db.session.rollback()
+            app.logger.error(f"Appointment booking error: {str(e)}")
+            flash('An error occurred while booking the appointment', 'danger')
+    
+    # Get all doctors for selection
+    doctors_list = Doctor.query.all()
+    doctor_id = request.args.get('doctor_id')
+    selected_doctor = None
+    
+    if doctor_id:
+        selected_doctor = Doctor.query.get(doctor_id)
+    
+    return render_template(
+        'book_appointment.html',
+        doctors=doctors_list,
+        selected_doctor=selected_doctor
+    )
+
+# Appointments route
+@app.route('/appointments')
+@login_required
+def appointments():
+    user_id = session.get('user_id')
+    user_type = session.get('user_type')
+    
+    if user_type == 'doctor':
+        doctor = Doctor.query.filter_by(user_id=user_id).first()
+        if not doctor:
+            flash('Doctor profile not found', 'danger')
+            return redirect(url_for('dashboard'))
+        
+        appointments_list = Appointment.query.filter_by(doctor_id=doctor.id).all()
+    else:
+        patient = Patient.query.filter_by(user_id=user_id).first()
+        if not patient:
+            flash('Patient profile not found', 'danger')
+            return redirect(url_for('dashboard'))
+        
+        appointments_list = Appointment.query.filter_by(patient_id=patient.id).all()
+    
+    return render_template('appointments.html', appointments=appointments_list, user_type=user_type)
+
+# API routes for AJAX calls
+@app.route('/api/doctors')
+@login_required
+def get_doctors():
+    doctors_list = Doctor.query.all()
+    doctors_data = []
+    
+    for doctor in doctors_list:
+        doctors_data.append({
+            'id': doctor.id,
+            'name': doctor.name,
+            'specialization': doctor.specialization,
+            'address': doctor.address,
+            'city': doctor.city,
+            'state': doctor.state,
+            'latitude': doctor.latitude,
+            'longitude': doctor.longitude
+        })
+    
+    return jsonify(doctors_data)
+
+@app.route('/api/appointments/<int:appointment_id>', methods=['PUT'])
+@login_required
+def update_appointment_status(appointment_id):
+    try:
+        data = request.json
+        new_status = data.get('status')
+        
+        if not new_status or new_status not in ['scheduled', 'completed', 'cancelled']:
+            return jsonify({'success': False, 'message': 'Invalid status'}), 400
+        
+        appointment = Appointment.query.get(appointment_id)
+        if not appointment:
+            return jsonify({'success': False, 'message': 'Appointment not found'}), 404
+        
+        # Check authorization
+        user_id = session.get('user_id')
+        user_type = session.get('user_type')
+        
+        if user_type == 'doctor':
+            doctor = Doctor.query.filter_by(user_id=user_id).first()
+            if not doctor or appointment.doctor_id != doctor.id:
+                return jsonify({'success': False, 'message': 'Not authorized'}), 403
+        else:
+            patient = Patient.query.filter_by(user_id=user_id).first()
+            if not patient or appointment.patient_id != patient.id:
+                return jsonify({'success': False, 'message': 'Not authorized'}), 403
+            
+            # Patients can only cancel appointments, not mark them completed
+            if new_status == 'completed':
+                return jsonify({'success': False, 'message': 'Not authorized to mark appointment as completed'}), 403
+        
+        appointment.status = new_status
+        db.session.commit()
+        
+        return jsonify({'success': True, 'message': f'Appointment {new_status} successfully'})
+        
+    except SQLAlchemyError as e:
+        db.session.rollback()
+        app.logger.error(f"Appointment update error: {str(e)}")
+        return jsonify({'success': False, 'message': 'An error occurred while updating appointment'}), 500
+
+# Error handlers
+@app.errorhandler(404)
+def page_not_found(e):
+    return render_template('error.html', code=404, message='Page not found'), 404
+
+@app.errorhandler(500)
+def server_error(e):
+    return render_template('error.html', code=500, message='Server error'), 500

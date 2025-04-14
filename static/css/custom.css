@@ -1,0 +1,134 @@
+/* Additional custom styles to complement Bootstrap */
+
+/* Animations */
+.fade-in {
+  animation: fadeIn 0.5s ease-in;
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+/* Symptom checker form styling */
+.symptom-form {
+  border-radius: 8px;
+  transition: all 0.3s ease;
+}
+
+.symptom-form:hover {
+  box-shadow: 0 0.5rem 1rem rgba(0, 0, 0, 0.15);
+}
+
+/* Doctor card styling */
+.doctor-card {
+  transition: transform 0.3s ease, box-shadow 0.3s ease;
+}
+
+.doctor-card:hover {
+  transform: translateY(-5px);
+  box-shadow: 0 0.5rem 1rem rgba(0, 0, 0, 0.15);
+}
+
+/* Custom loader animation */
+.loader {
+  display: inline-block;
+  width: 30px;
+  height: 30px;
+  border: 3px solid rgba(var(--bs-primary-rgb), 0.3);
+  border-radius: 50%;
+  border-top-color: var(--bs-primary);
+  animation: spin 1s ease-in-out infinite;
+}
+
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}
+
+/* Health icons styling */
+.health-icon {
+  font-size: 2.5rem;
+  color: var(--bs-primary);
+  margin-bottom: 1rem;
+}
+
+/* Custom badge styles */
+.badge-scheduled {
+  background-color: var(--bs-info);
+  color: white;
+}
+
+.badge-completed {
+  background-color: var(--bs-success);
+  color: white;
+}
+
+.badge-cancelled {
+  background-color: var(--bs-danger);
+  color: white;
+}
+
+/* Hero section styles */
+.hero-section {
+  position: relative;
+  padding: 4rem 0;
+  background: linear-gradient(45deg, #2b5876, #4e4376);
+  color: white;
+}
+
+/* Responsive adjustments */
+@media (max-width: 768px) {
+  .hero-section {
+    padding: 2rem 0;
+  }
+  
+  .health-icon {
+    font-size: 2rem;
+  }
+}
+
+/* Analysis result styling */
+.analysis-section {
+  border-left: 3px solid var(--bs-primary);
+  padding-left: 15px;
+  margin: 10px 0;
+}
+
+/* Profile page styling */
+.profile-header {
+  background: linear-gradient(45deg, #2b5876, #4e4376);
+  color: white;
+  border-radius: 8px;
+  padding: 20px;
+  margin-bottom: 20px;
+}
+
+/* Appointment calendar styles */
+.appointment-date-selected {
+  background-color: var(--bs-primary) !important;
+  color: white !important;
+}
+
+/* Dashboard stats */
+.stats-card {
+  border-radius: 10px;
+  border: none;
+  padding: 1.5rem;
+  transition: all 0.3s ease;
+}
+
+.stats-card:hover {
+  transform: translateY(-5px);
+}
+
+/* Specialty labels */
+.specialty-badge {
+  font-size: 0.8rem;
+  padding: 0.25rem 0.5rem;
+  border-radius: 50px;
+  background-color: rgba(var(--bs-info-rgb), 0.1);
+  color: var(--bs-info);
+  margin-right: 0.5rem;
+  margin-bottom: 0.5rem;
+  display: inline-block;
+}

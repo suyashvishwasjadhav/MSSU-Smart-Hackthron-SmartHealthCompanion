@@ -1,0 +1,240 @@
+{% extends 'base.html' %}
+
+{% block title %}HealthConnect - Smart Healthcare Platform{% endblock %}
+
+{% block content %}
+<!-- Hero Section -->
+<section class="hero-section">
+    <div class="container py-5">
+        <div class="row align-items-center">
+            <div class="col-lg-6 mb-4 mb-lg-0">
+                <h1 class="display-4 fw-bold mb-4 fade-in">Smart Healthcare at Your Fingertips</h1>
+                <p class="lead mb-4 fade-in">
+                    Connect with qualified doctors based on AI-powered symptom analysis and your location.
+                    Get healthcare guidance when you need it, where you need it.
+                </p>
+                <div class="d-grid gap-2 d-md-flex justify-content-md-start fade-in">
+                    <a href="{{ url_for('register') }}" class="btn btn-primary btn-lg px-4 me-md-2">
+                        <i class="fas fa-user-plus me-2"></i> Sign Up
+                    </a>
+                    <a href="{{ url_for('login') }}" class="btn btn-outline-light btn-lg px-4">
+                        <i class="fas fa-sign-in-alt me-2"></i> Login
+                    </a>
+                </div>
+            </div>
+            <div class="col-lg-6">
+                <img src="https://images.unsplash.com/photo-1516841273335-e39b37888115" alt="Medical Professional" class="img-fluid rounded-3 shadow fade-in">
+            </div>
+        </div>
+    </div>
+</section>
+
+<!-- Features Section -->
+<section class="py-5">
+    <div class="container">
+        <h2 class="text-center mb-5">How HealthConnect Works</h2>
+        <div class="row g-4">
+            <div class="col-md-4">
+                <div class="card h-100 border-0 shadow-sm">
+                    <div class="card-body text-center p-4">
+                        <div class="health-icon mb-3">
+                            <i class="fas fa-stethoscope"></i>
+                        </div>
+                        <h4 class="card-title">AI Symptom Analysis</h4>
+                        <p class="card-text">
+                            Describe your symptoms and our AI will analyze them to provide possible conditions and recommended next steps.
+                        </p>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-4">
+                <div class="card h-100 border-0 shadow-sm">
+                    <div class="card-body text-center p-4">
+                        <div class="health-icon mb-3">
+                            <i class="fas fa-map-marker-alt"></i>
+                        </div>
+                        <h4 class="card-title">Find Nearby Doctors</h4>
+                        <p class="card-text">
+                            Discover healthcare professionals near you based on your location and specific medical needs.
+                        </p>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-4">
+                <div class="card h-100 border-0 shadow-sm">
+                    <div class="card-body text-center p-4">
+                        <div class="health-icon mb-3">
+                            <i class="fas fa-calendar-check"></i>
+                        </div>
+                        <h4 class="card-title">Book Appointments</h4>
+                        <p class="card-text">
+                            Schedule appointments with doctors directly through our platform, quick and hassle-free.
+                        </p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+
+<!-- Testimonials -->
+<section class="py-5 bg-light">
+    <div class="container">
+        <h2 class="text-center mb-5">What Our Users Say</h2>
+        <div class="row">
+            <div class="col-lg-4 mb-4">
+                <div class="card h-100 border-0 shadow-sm">
+                    <div class="card-body p-4">
+                        <div class="d-flex justify-content-between mb-3">
+                            <div class="d-flex align-items-center">
+                                <div class="rounded-circle bg-primary text-white d-flex align-items-center justify-content-center me-3" style="width: 50px; height: 50px;">
+                                    <span class="fw-bold">SM</span>
+                                </div>
+                                <div>
+                                    <h5 class="mb-0">Sarah M.</h5>
+                                    <small class="text-muted">Patient</small>
+                                </div>
+                            </div>
+                            <div class="text-warning">
+                                <i class="fas fa-star"></i>
+                                <i class="fas fa-star"></i>
+                                <i class="fas fa-star"></i>
+                                <i class="fas fa-star"></i>
+                                <i class="fas fa-star"></i>
+                            </div>
+                        </div>
+                        <p class="card-text">
+                            "The symptom checker gave me accurate suggestions and connected me with a specialist who diagnosed my condition correctly. Saved me so much time!"
+                        </p>
+                    </div>
+                </div>
+            </div>
+            <div class="col-lg-4 mb-4">
+                <div class="card h-100 border-0 shadow-sm">
+                    <div class="card-body p-4">
+                        <div class="d-flex justify-content-between mb-3">
+                            <div class="d-flex align-items-center">
+                                <div class="rounded-circle bg-primary text-white d-flex align-items-center justify-content-center me-3" style="width: 50px; height: 50px;">
+                                    <span class="fw-bold">DR</span>
+                                </div>
+                                <div>
+                                    <h5 class="mb-0">Dr. Robert K.</h5>
+                                    <small class="text-muted">Cardiologist</small>
+                                </div>
+                            </div>
+                            <div class="text-warning">
+                                <i class="fas fa-star"></i>
+                                <i class="fas fa-star"></i>
+                                <i class="fas fa-star"></i>
+                                <i class="fas fa-star"></i>
+                                <i class="fas fa-star"></i>
+                            </div>
+                        </div>
+                        <p class="card-text">
+                            "As a healthcare provider, I appreciate how this platform pre-screens patients with accurate AI analysis, making consultations more effective and focused."
+                        </p>
+                    </div>
+                </div>
+            </div>
+            <div class="col-lg-4 mb-4">
+                <div class="card h-100 border-0 shadow-sm">
+                    <div class="card-body p-4">
+                        <div class="d-flex justify-content-between mb-3">
+                            <div class="d-flex align-items-center">
+                                <div class="rounded-circle bg-primary text-white d-flex align-items-center justify-content-center me-3" style="width: 50px; height: 50px;">
+                                    <span class="fw-bold">JL</span>
+                                </div>
+                                <div>
+                                    <h5 class="mb-0">James L.</h5>
+                                    <small class="text-muted">Patient</small>
+                                </div>
+                            </div>
+                            <div class="text-warning">
+                                <i class="fas fa-star"></i>
+                                <i class="fas fa-star"></i>
+                                <i class="fas fa-star"></i>
+                                <i class="fas fa-star"></i>
+                                <i class="fas fa-star-half-alt"></i>
+                            </div>
+                        </div>
+                        <p class="card-text">
+                            "Finding doctors near me has never been easier. The appointment booking system is seamless, and I love getting reminders for upcoming visits."
+                        </p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+
+<!-- CTA Section -->
+<section class="py-5 bg-primary text-white">
+    <div class="container text-center">
+        <h2 class="mb-4">Ready to experience smarter healthcare?</h2>
+        <p class="lead mb-4">Join thousands of users who trust HealthConnect for their healthcare needs.</p>
+        <div>
+            <a href="{{ url_for('register') }}" class="btn btn-light btn-lg px-4 me-2">
+                <i class="fas fa-user-plus me-2"></i> Sign Up Now
+            </a>
+            <a href="#" class="btn btn-outline-light btn-lg px-4">
+                <i class="fas fa-info-circle me-2"></i> Learn More
+            </a>
+        </div>
+    </div>
+</section>
+
+<!-- Featured Doctors -->
+<section class="py-5">
+    <div class="container">
+        <h2 class="text-center mb-5">Our Featured Healthcare Professionals</h2>
+        <div class="row g-4">
+            <div class="col-md-4 mb-4">
+                <div class="card h-100 doctor-card">
+                    <img src="https://images.unsplash.com/photo-1559839734-2b71ea197ec2" class="card-img-top" alt="Doctor Image">
+                    <div class="card-body">
+                        <h5 class="card-title">Dr. Emily Wilson</h5>
+                        <p class="text-muted">Cardiologist</p>
+                        <p class="card-text">Specialized in cardiovascular health with over 15 years of experience in diagnosing and treating heart conditions.</p>
+                        <div class="d-flex">
+                            <span class="specialty-badge">Heart Health</span>
+                            <span class="specialty-badge">Preventive Care</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-4 mb-4">
+                <div class="card h-100 doctor-card">
+                    <img src="https://images.unsplash.com/photo-1576091160399-112ba8d25d1d" class="card-img-top" alt="Doctor Image">
+                    <div class="card-body">
+                        <h5 class="card-title">Dr. Michael Chen</h5>
+                        <p class="text-muted">Neurologist</p>
+                        <p class="card-text">Expert in neurological disorders, headaches, and stroke recovery with a patient-centered approach to treatment.</p>
+                        <div class="d-flex">
+                            <span class="specialty-badge">Migraines</span>
+                            <span class="specialty-badge">Stroke</span>
+                            <span class="specialty-badge">Epilepsy</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-4 mb-4">
+                <div class="card h-100 doctor-card">
+                    <img src="https://images.unsplash.com/photo-1618490062797-0a495f796235" class="card-img-top" alt="Doctor Image">
+                    <div class="card-body">
+                        <h5 class="card-title">Dr. Sarah Johnson</h5>
+                        <p class="text-muted">Pediatrician</p>
+                        <p class="card-text">Dedicated to children's health from infancy through adolescence. Known for her gentle approach and thorough care.</p>
+                        <div class="d-flex">
+                            <span class="specialty-badge">Child Development</span>
+                            <span class="specialty-badge">Vaccinations</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="text-center mt-4">
+            <a href="{{ url_for('register') }}" class="btn btn-outline-primary">Join to See More Healthcare Professionals</a>
+        </div>
+    </div>
+</section>
+{% endblock %}

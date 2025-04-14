@@ -1,0 +1,197 @@
+{% extends 'base.html' %}
+
+{% block title %}Register - HealthConnect{% endblock %}
+
+{% block content %}
+<div class="container py-5">
+    <div class="row justify-content-center">
+        <div class="col-lg-8">
+            <div class="card border-0 shadow-lg">
+                <div class="card-header bg-primary text-white text-center py-3">
+                    <h4 class="mb-0"><i class="fas fa-user-plus me-2"></i> Create Your Account</h4>
+                </div>
+                <div class="card-body p-4">
+                    <form method="POST" action="{{ url_for('register') }}" class="needs-validation" novalidate>
+                        <div class="row g-3">
+                            <div class="col-12 mb-3">
+                                <label class="form-label">I am a:</label>
+                                <div class="d-flex">
+                                    <div class="form-check form-check-inline">
+                                        <input class="form-check-input" type="radio" name="user_type" id="user_type_patient" value="patient" checked>
+                                        <label class="form-check-label" for="user_type_patient">
+                                            <i class="fas fa-user me-1"></i> Patient
+                                        </label>
+                                    </div>
+                                    <div class="form-check form-check-inline">
+                                        <input class="form-check-input" type="radio" name="user_type" id="user_type_doctor" value="doctor">
+                                        <label class="form-check-label" for="user_type_doctor">
+                                            <i class="fas fa-user-md me-1"></i> Doctor
+                                        </label>
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <div class="col-md-6 mb-3">
+                                <label for="name" class="form-label">Full Name</label>
+                                <div class="input-group">
+                                    <span class="input-group-text"><i class="fas fa-user"></i></span>
+                                    <input type="text" class="form-control" id="name" name="name" placeholder="Enter your full name" required>
+                                    <div class="invalid-feedback">
+                                        Please enter your name.
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <div class="col-md-6 mb-3">
+                                <label for="email" class="form-label">Email Address</label>
+                                <div class="input-group">
+                                    <span class="input-group-text"><i class="fas fa-envelope"></i></span>
+                                    <input type="email" class="form-control" id="email" name="email" placeholder="Enter your email" required>
+                                    <div class="invalid-feedback">
+                                        Please enter a valid email address.
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <div class="col-md-6 mb-3">
+                                <label for="password" class="form-label">Password</label>
+                                <div class="input-group">
+                                    <span class="input-group-text"><i class="fas fa-lock"></i></span>
+                                    <input type="password" class="form-control" id="password" name="password" placeholder="Create password" required>
+                                    <button class="btn btn-outline-secondary toggle-password" type="button" data-target="password">
+                                        <i class="fas fa-eye"></i>
+                                    </button>
+                                    <div class="invalid-feedback">
+                                        Please create a password.
+                                    </div>
+                                </div>
+                                <div class="progress mt-2" style="height: 5px;">
+                                    <div id="password-strength" class="progress-bar" role="progressbar" style="width: 0%"></div>
+                                </div>
+                            </div>
+                            
+                            <div class="col-md-6 mb-3">
+                                <label for="confirm_password" class="form-label">Confirm Password</label>
+                                <div class="input-group">
+                                    <span class="input-group-text"><i class="fas fa-lock"></i></span>
+                                    <input type="password" class="form-control" id="confirm_password" name="confirm_password" placeholder="Confirm password" required>
+                                    <button class="btn btn-outline-secondary toggle-password" type="button" data-target="confirm_password">
+                                        <i class="fas fa-eye"></i>
+                                    </button>
+                                    <div class="invalid-feedback">
+                                        Passwords must match.
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <!-- Doctor-specific fields (shown/hidden via JS) -->
+                            <div class="col-12 mb-3 doctor-field" style="display: none;">
+                                <label for="specialization" class="form-label">Specialization</label>
+                                <div class="input-group">
+                                    <span class="input-group-text"><i class="fas fa-stethoscope"></i></span>
+                                    <select class="form-select" id="specialization" name="specialization">
+                                        <option value="" selected disabled>Select your specialization</option>
+                                        <option value="Cardiologist">Cardiologist</option>
+                                        <option value="Dermatologist">Dermatologist</option>
+                                        <option value="Endocrinologist">Endocrinologist</option>
+                                        <option value="Gastroenterologist">Gastroenterologist</option>
+                                        <option value="Neurologist">Neurologist</option>
+                                        <option value="Obstetrician/Gynecologist">Obstetrician/Gynecologist</option>
+                                        <option value="Oncologist">Oncologist</option>
+                                        <option value="Ophthalmologist">Ophthalmologist</option>
+                                        <option value="Orthopedic Surgeon">Orthopedic Surgeon</option>
+                                        <option value="Otolaryngologist">Otolaryngologist (ENT)</option>
+                                        <option value="Pediatrician">Pediatrician</option>
+                                        <option value="Psychiatrist">Psychiatrist</option>
+                                        <option value="Pulmonologist">Pulmonologist</option>
+                                        <option value="Radiologist">Radiologist</option>
+                                        <option value="Rheumatologist">Rheumatologist</option>
+                                        <option value="Urologist">Urologist</option>
+                                        <option value="General Practitioner">General Practitioner</option>
+                                        <option value="Other">Other</option>
+                                    </select>
+                                    <div class="invalid-feedback">
+                                        Please select your specialization.
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <div class="col-12 mb-3">
+                                <div class="form-check">
+                                    <input class="form-check-input" type="checkbox" id="terms" name="terms" required>
+                                    <label class="form-check-label" for="terms">
+                                        I agree to the <a href="#" class="text-decoration-none">Terms of Service</a> and <a href="#" class="text-decoration-none">Privacy Policy</a>
+                                    </label>
+                                    <div class="invalid-feedback">
+                                        You must agree to our terms and conditions.
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <div class="col-12">
+                                <div class="d-grid">
+                                    <button type="submit" class="btn btn-primary py-2">
+                                        <i class="fas fa-user-plus me-2"></i> Create Account
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    </form>
+                </div>
+                <div class="card-footer bg-light text-center py-3">
+                    <p class="mb-0">Already have an account? <a href="{{ url_for('login') }}" class="text-decoration-none">Login</a></p>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+{% block extra_js %}
+<script>
+    // Show/hide doctor-specific fields based on user type selection
+    document.addEventListener('DOMContentLoaded', function() {
+        const doctorRadio = document.getElementById('user_type_doctor');
+        const patientRadio = document.getElementById('user_type_patient');
+        const doctorFields = document.querySelectorAll('.doctor-field');
+        const specializationField = document.getElementById('specialization');
+        
+        function toggleDoctorFields() {
+            const isDoctor = doctorRadio.checked;
+            
+            doctorFields.forEach(field => {
+                field.style.display = isDoctor ? 'block' : 'none';
+            });
+            
+            // Toggle required attribute on specialization field
+            if (isDoctor) {
+                specializationField.setAttribute('required', '');
+            } else {
+                specializationField.removeAttribute('required');
+            }
+        }
+        
+        // Set initial state
+        toggleDoctorFields();
+        
+        // Add event listeners to radio buttons
+        doctorRadio.addEventListener('change', toggleDoctorFields);
+        patientRadio.addEventListener('change', toggleDoctorFields);
+        
+        // Password matching validation
+        const password = document.getElementById('password');
+        const confirmPassword = document.getElementById('confirm_password');
+        
+        function validatePassword() {
+            if (password.value !== confirmPassword.value) {
+                confirmPassword.setCustomValidity("Passwords don't match");
+            } else {
+                confirmPassword.setCustomValidity('');
+            }
+        }
+        
+        password.addEventListener('change', validatePassword);
+        confirmPassword.addEventListener('keyup', validatePassword);
+    });
+</script>
+{% endblock %}
+{% endblock %}
