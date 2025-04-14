@@ -3,17 +3,24 @@ from functools import wraps
 import google.generativeai as genai
 import os
 import json
+import base64
+import re
 from datetime import datetime, timedelta
 from app import app, db
-from models import User, Doctor, Patient, Appointment, SymptomCheck
+from models import User, Doctor, Patient, Appointment, SymptomCheck, ImageAnalysisSection
 from config import GOOGLE_API_KEY
 import logging
 from sqlalchemy.exc import SQLAlchemyError
 from werkzeug.security import generate_password_hash, check_password_hash
+from openai import OpenAI
 
 # Configure Gemini API
 genai.configure(api_key=GOOGLE_API_KEY)
 model = genai.GenerativeModel('gemini-2.0-flash')
+
+# Configure OpenAI API
+OPENAI_API_KEY = os.environ.get("OPENAI_API_KEY")
+openai_client = OpenAI(api_key=OPENAI_API_KEY)
 
 # Login required decorator
 def login_required(f):
@@ -245,7 +252,33 @@ def symptom_checker():
             duration = data.get('duration', '')
             severity = data.get('severity', '')
             medical_history = data.get('medical_history', '')
+            image_data = data.get('image_data', '')  # Base64 encoded image
             
+            # Check if an image was uploaded
+            has_image = bool(image_data and image_data.startswith('data:image'))
+            
+            # Prepare the symptom check object first (we'll analyze later)
+            new_check = SymptomCheck(
+                patient_id=patient.id,
+                symptoms=symptoms,
+                age=int(age) if age.isdigit() else None,
+                gender=gender,
+                duration=duration,
+                severity=severity,
+                medical_history=medical_history
+            )
+            
+            # Store the image data if provided
+            if has_image:
+                # Extract the base64 part
+                base64_data = re.sub('^data:image/.+;base64,', '', image_data)
+                new_check.image_data = base64_data
+            
+            # Add to session to get ID but don't commit yet
+            db.session.add(new_check)
+            db.session.flush()
+                
+            # Text analysis prompt
             prompt = f"""As a medical AI assistant, analyze the following patient information:
 
 Patient Information:
@@ -308,23 +341,30 @@ Note: This is an AI-generated analysis for informational purposes only. Please c
                     base_section = section.replace(":", "")
                     formatted_response = formatted_response.replace(base_section, section)
             
-            # Save the symptom check to database
-            new_check = SymptomCheck(
-                patient_id=patient.id,
-                symptoms=symptoms,
-                age=int(age) if age.isdigit() else None,
-                gender=gender,
-                duration=duration,
-                severity=severity,
-                medical_history=medical_history,
-                ai_analysis=formatted_response
-            )
-            db.session.add(new_check)
+            # Save the text analysis
+            new_check.ai_analysis = formatted_response
+            
+            # Process image if provided
+            image_analysis_result = None
+            if has_image:
+                try:
+                    image_analysis_result = analyze_medical_image(base64_data, symptoms, age, gender, medical_history)
+                    new_check.image_analysis = image_analysis_result
+                    
+                    # Create structured sections for the image analysis
+                    create_image_analysis_sections(new_check.id, image_analysis_result)
+                except Exception as img_err:
+                    app.logger.error(f"Image analysis error: {str(img_err)}")
+                    # Continue without image analysis if it fails
+            
+            # Commit the changes
             db.session.commit()
             
             return jsonify({
                 'success': True,
                 'analysis': formatted_response,
+                'has_image': has_image,
+                'image_analysis': image_analysis_result if has_image else None,
                 'check_id': new_check.id
             })
             
@@ -337,6 +377,117 @@ Note: This is an AI-generated analysis for informational purposes only. Please c
             }), 500
     
     return render_template('symptom_checker.html')
+
+
+# Function to analyze medical images using OpenAI's Vision API
+def analyze_medical_image(base64_image, symptoms, age, gender, medical_history):
+    try:
+        # Format the image for OpenAI API
+        base64_image_data = f"data:image/jpeg;base64,{base64_image}"
+        
+        # Create the prompt
+        prompt = f"""As a medical AI assistant, analyze this medical image with the following patient information:
+
+Patient Information:
+- Age: {age}
+- Gender: {gender}
+- Reported Symptoms: {symptoms}
+- Medical History: {medical_history}
+
+Please provide a detailed analysis of the visible symptoms or conditions in the image.
+Structure your analysis in the following sections:
+
+Visual Findings:
+[Describe all visible symptoms, abnormalities, or medical conditions shown in the image]
+
+Potential Diagnoses:
+[List possible diagnoses based on the visual findings, ordered by likelihood]
+
+Recommended Medical Specialties:
+[Suggest which medical specialists would be appropriate for follow-up care]
+
+Important Notes:
+[Include any critical observations or warnings about the condition]
+
+This is for educational purposes only and not a substitute for professional medical diagnosis.
+"""
+
+        # the newest OpenAI model is "gpt-4o" which was released May 13, 2024.
+        # do not change this unless explicitly requested by the user
+        response = openai_client.chat.completions.create(
+            model="gpt-4o",
+            messages=[
+                {
+                    "role": "user",
+                    "content": [
+                        {"type": "text", "text": prompt},
+                        {
+                            "type": "image_url",
+                            "image_url": {"url": base64_image_data}
+                        }
+                    ]
+                }
+            ],
+            max_tokens=1000
+        )
+        
+        # Extract and return the analysis
+        return response.choices[0].message.content
+        
+    except Exception as e:
+        app.logger.error(f"OpenAI API error: {str(e)}")
+        raise Exception(f"Error analyzing medical image: {str(e)}")
+
+
+# Function to split image analysis into structured sections
+def create_image_analysis_sections(symptom_check_id, analysis_text):
+    try:
+        # Define the sections to look for
+        sections = {
+            "Visual Findings:": 1,
+            "Potential Diagnoses:": 2,
+            "Recommended Medical Specialties:": 3,
+            "Important Notes:": 4
+        }
+        
+        # Split the text by sections
+        current_section = None
+        section_content = {}
+        
+        # Initialize all sections with empty content
+        for section in sections:
+            section_content[section] = ""
+        
+        # Process the analysis line by line
+        for line in analysis_text.split('\n'):
+            found_section = False
+            for section in sections:
+                if line.strip().startswith(section):
+                    current_section = section
+                    found_section = True
+                    break
+            
+            if found_section:
+                continue
+                
+            if current_section and line.strip():
+                section_content[current_section] += line + "\n"
+        
+        # Create database entries for each section
+        for section, order in sections.items():
+            content = section_content[section].strip()
+            if content:
+                section_entry = ImageAnalysisSection(
+                    symptom_check_id=symptom_check_id,
+                    section_title=section,
+                    section_content=content,
+                    section_order=order
+                )
+                db.session.add(section_entry)
+                
+    except Exception as e:
+        app.logger.error(f"Error creating image sections: {str(e)}")
+        # Continue even if section creation fails
 
 # Doctor finder route
 @app.route('/doctor-finder')

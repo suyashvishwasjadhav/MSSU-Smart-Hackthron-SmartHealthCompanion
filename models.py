@@ -85,4 +85,18 @@ class SymptomCheck(db.Model):
     severity = db.Column(db.String(20))
     medical_history = db.Column(db.Text)
     ai_analysis = db.Column(db.Text)
+    image_data = db.Column(db.Text)  # Store base64-encoded image data
+    image_analysis = db.Column(db.Text)  # Store image analysis results
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+
+    # Relationships
+    image_sections = db.relationship('ImageAnalysisSection', backref='symptom_check', lazy='dynamic', cascade='all, delete-orphan')
+
+
+class ImageAnalysisSection(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    symptom_check_id = db.Column(db.Integer, db.ForeignKey('symptom_check.id'), nullable=False)
+    section_title = db.Column(db.String(100), nullable=False)
+    section_content = db.Column(db.Text, nullable=False)
+    section_order = db.Column(db.Integer, default=0)
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
