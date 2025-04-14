@@ -1,0 +1,188 @@
+{% extends 'base.html' %}
+
+{% block title %}Notifications - HealthConnect{% endblock %}
+
+{% block content %}
+<div class="container my-4">
+    <div class="row">
+        <div class="col-lg-12">
+            <div class="d-flex justify-content-between align-items-center mb-4">
+                <h1 class="fs-2"><i class="fas fa-bell me-2"></i> Notifications</h1>
+            </div>
+
+            <!-- Tabs for unread and read notifications -->
+            <ul class="nav nav-tabs mb-4" id="notificationTabs" role="tablist">
+                <li class="nav-item" role="presentation">
+                    <button class="nav-link active" id="unread-tab" data-bs-toggle="tab" data-bs-target="#unread" type="button" role="tab" aria-controls="unread" aria-selected="true">
+                        <i class="fas fa-envelope me-1"></i> Unread 
+                        {% if unread_notifications %}
+                            <span class="badge bg-danger ms-1">{{ unread_notifications|length }}</span>
+                        {% endif %}
+                    </button>
+                </li>
+                <li class="nav-item" role="presentation">
+                    <button class="nav-link" id="read-tab" data-bs-toggle="tab" data-bs-target="#read" type="button" role="tab" aria-controls="read" aria-selected="false">
+                        <i class="fas fa-envelope-open me-1"></i> Read
+                    </button>
+                </li>
+            </ul>
+
+            <div class="tab-content" id="notificationTabsContent">
+                <!-- Unread Notifications -->
+                <div class="tab-pane fade show active" id="unread" role="tabpanel" aria-labelledby="unread-tab">
+                    {% if unread_notifications %}
+                        <div class="list-group">
+                            {% for notification in unread_notifications %}
+                                <div class="list-group-item list-group-item-action notification-item" data-id="{{ notification.id }}">
+                                    <div class="d-flex w-100 justify-content-between">
+                                        <h5 class="mb-1">
+                                            {% if notification.type == 'appointment_request' %}
+                                                <i class="fas fa-calendar-plus text-primary me-2"></i> New Appointment Request
+                                            {% elif notification.type == 'appointment_pending' %}
+                                                <i class="fas fa-hourglass-half text-warning me-2"></i> Appointment Pending
+                                            {% elif notification.type == 'appointment_approved' %}
+                                                <i class="fas fa-check-circle text-success me-2"></i> Appointment Approved
+                                            {% elif notification.type == 'appointment_rejected' %}
+                                                <i class="fas fa-times-circle text-danger me-2"></i> Appointment Rejected
+                                            {% elif notification.type == 'appointment_cancelled' %}
+                                                <i class="fas fa-ban text-danger me-2"></i> Appointment Cancelled
+                                            {% elif notification.type == 'appointment_completed' %}
+                                                <i class="fas fa-check-double text-success me-2"></i> Appointment Completed
+                                            {% else %}
+                                                <i class="fas fa-bell text-primary me-2"></i> Notification
+                                            {% endif %}
+                                        </h5>
+                                        <small class="text-muted">{{ notification.created_at.strftime('%b %d, %Y %I:%M %p') }}</small>
+                                    </div>
+                                    <p class="mb-1">{{ notification.message }}</p>
+                                    
+                                    <!-- Action buttons -->
+                                    <div class="d-flex justify-content-between align-items-center mt-2">
+                                        {% if notification.appointment_id %}
+                                            <a href="{{ url_for('appointments') }}?highlight={{ notification.appointment_id }}" class="btn btn-sm btn-outline-primary">
+                                                <i class="fas fa-calendar-alt me-1"></i> View Appointment
+                                            </a>
+                                        {% else %}
+                                            <div></div>
+                                        {% endif %}
+                                        
+                                        <button class="btn btn-sm btn-outline-secondary mark-as-read" data-id="{{ notification.id }}">
+                                            <i class="fas fa-check me-1"></i> Mark as Read
+                                        </button>
+                                    </div>
+                                </div>
+                            {% endfor %}
+                        </div>
+                    {% else %}
+                        <div class="alert alert-info">
+                            <i class="fas fa-info-circle me-2"></i> You have no unread notifications.
+                        </div>
+                    {% endif %}
+                </div>
+
+                <!-- Read Notifications -->
+                <div class="tab-pane fade" id="read" role="tabpanel" aria-labelledby="read-tab">
+                    {% if read_notifications %}
+                        <div class="list-group opacity-75">
+                            {% for notification in read_notifications %}
+                                <div class="list-group-item notification-item">
+                                    <div class="d-flex w-100 justify-content-between">
+                                        <h5 class="mb-1">
+                                            {% if notification.type == 'appointment_request' %}
+                                                <i class="fas fa-calendar-plus text-primary me-2"></i> New Appointment Request
+                                            {% elif notification.type == 'appointment_pending' %}
+                                                <i class="fas fa-hourglass-half text-warning me-2"></i> Appointment Pending
+                                            {% elif notification.type == 'appointment_approved' %}
+                                                <i class="fas fa-check-circle text-success me-2"></i> Appointment Approved
+                                            {% elif notification.type == 'appointment_rejected' %}
+                                                <i class="fas fa-times-circle text-danger me-2"></i> Appointment Rejected
+                                            {% elif notification.type == 'appointment_cancelled' %}
+                                                <i class="fas fa-ban text-danger me-2"></i> Appointment Cancelled
+                                            {% elif notification.type == 'appointment_completed' %}
+                                                <i class="fas fa-check-double text-success me-2"></i> Appointment Completed
+                                            {% else %}
+                                                <i class="fas fa-bell text-primary me-2"></i> Notification
+                                            {% endif %}
+                                        </h5>
+                                        <small class="text-muted">{{ notification.created_at.strftime('%b %d, %Y %I:%M %p') }}</small>
+                                    </div>
+                                    <p class="mb-1">{{ notification.message }}</p>
+                                    
+                                    <!-- View appointment button if applicable -->
+                                    {% if notification.appointment_id %}
+                                        <div class="d-flex justify-content-end mt-2">
+                                            <a href="{{ url_for('appointments') }}?highlight={{ notification.appointment_id }}" class="btn btn-sm btn-outline-primary">
+                                                <i class="fas fa-calendar-alt me-1"></i> View Appointment
+                                            </a>
+                                        </div>
+                                    {% endif %}
+                                </div>
+                            {% endfor %}
+                        </div>
+                    {% else %}
+                        <div class="alert alert-info">
+                            <i class="fas fa-info-circle me-2"></i> You have no read notifications.
+                        </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        // Handle marking notifications as read
+        const markAsReadButtons = document.querySelectorAll('.mark-as-read');
+        markAsReadButtons.forEach(button => {
+            button.addEventListener('click', function() {
+                const notificationId = this.dataset.id;
+                markNotificationAsRead(notificationId);
+            });
+        });
+
+        function markNotificationAsRead(notificationId) {
+            fetch(`/api/notifications/${notificationId}/read`, {
+                method: 'PUT',
+                headers: {
+                    'Content-Type': 'application/json'
+                }
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    // Remove the notification from the unread list
+                    const notificationItem = document.querySelector(`.notification-item[data-id="${notificationId}"]`);
+                    if (notificationItem) {
+                        notificationItem.remove();
+                    }
+                    
+                    // Update the unread count
+                    const unreadCount = document.querySelectorAll('#unread .notification-item').length;
+                    const unreadBadge = document.querySelector('#unread-tab .badge');
+                    if (unreadBadge) {
+                        if (unreadCount > 0) {
+                            unreadBadge.textContent = unreadCount;
+                        } else {
+                            unreadBadge.remove();
+                            // Show "no unread notifications" message
+                            const unreadTab = document.getElementById('unread');
+                            unreadTab.innerHTML = '<div class="alert alert-info"><i class="fas fa-info-circle me-2"></i> You have no unread notifications.</div>';
+                        }
+                    }
+                    
+                    // Reload the page to update the read notifications tab
+                    setTimeout(() => {
+                        window.location.reload();
+                    }, 1000);
+                }
+            })
+            .catch(error => {
+                console.error('Error marking notification as read:', error);
+            });
+        }
+    });
+</script>
+{% endblock %}
