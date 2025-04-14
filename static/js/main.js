@@ -106,6 +106,44 @@ document.addEventListener('DOMContentLoaded', function() {
         });
     }, 5000);
     
+    // Fetch and update notification count in the navbar
+    function updateNotificationCount() {
+        // Check if user is logged in (look for notification link in navbar)
+        const notificationLink = document.querySelector('a[href="/notifications"]');
+        if (notificationLink) {
+            fetch('/api/notifications/count')
+                .then(response => response.json())
+                .then(data => {
+                    // Find the badge element
+                    let badgeElement = notificationLink.querySelector('.badge');
+                    
+                    if (data.count > 0) {
+                        // If badge doesn't exist, create it
+                        if (!badgeElement) {
+                            badgeElement = document.createElement('span');
+                            badgeElement.className = 'position-absolute top-0 start-100 translate-middle badge rounded-pill bg-danger';
+                            badgeElement.innerHTML = `${data.count}<span class="visually-hidden">unread notifications</span>`;
+                            notificationLink.classList.add('position-relative');
+                            notificationLink.appendChild(badgeElement);
+                        } else {
+                            // Update existing badge
+                            badgeElement.textContent = data.count;
+                        }
+                    } else if (badgeElement) {
+                        // Remove badge if count is 0
+                        badgeElement.remove();
+                    }
+                })
+                .catch(error => {
+                    console.error('Error fetching notification count:', error);
+                });
+        }
+    }
+    
+    // Update notification count on page load and every 60 seconds
+    updateNotificationCount();
+    setInterval(updateNotificationCount, 60000);
+    
     // Handle appointment status changes
     const appointmentStatusBtns = document.querySelectorAll('.appointment-status-btn');
     appointmentStatusBtns.forEach(btn => {

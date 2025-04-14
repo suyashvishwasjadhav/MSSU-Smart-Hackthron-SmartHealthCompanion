@@ -777,8 +777,8 @@ def update_appointment_status(appointment_id):
         old_status = appointment.status
         
         # Formatted date and time for notifications
-        formatted_date = appointment.date.strftime('%A, %B %d, %Y')
-        formatted_time = appointment.time.strftime('%I:%M %p')
+        formatted_date = appointment.date.strftime('%A, %B %d, %Y') if appointment.date else "Unknown date"
+        formatted_time = appointment.time.strftime('%I:%M %p') if appointment.time else "Unknown time"
         
         if user_type == 'doctor':
             doctor = Doctor.query.filter_by(user_id=user_id).first()
