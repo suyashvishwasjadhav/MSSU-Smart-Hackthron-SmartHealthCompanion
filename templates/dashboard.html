@@ -54,8 +54,18 @@
                         <div>
                             <h6 class="card-subtitle mb-2">Total Patients</h6>
                             <h2 class="card-title mb-0">
-                                <!-- This would be dynamic in a real implementation -->
-                                {{ appointments|map(attribute='patient_id')|list|unique|count if appointments else 0 }}
+                                <!-- Count unique patients using a Python set -->
+                                {% if appointments %}
+                                    {% set patient_ids = [] %}
+                                    {% for appointment in appointments %}
+                                        {% if appointment.patient_id not in patient_ids %}
+                                            {% set _ = patient_ids.append(appointment.patient_id) %}
+                                        {% endif %}
+                                    {% endfor %}
+                                    {{ patient_ids|length }}
+                                {% else %}
+                                    0
+                                {% endif %}
                             </h2>
                         </div>
                         <i class="fas fa-users fa-3x opacity-50"></i>
@@ -120,8 +130,18 @@
                         <div>
                             <h6 class="card-subtitle mb-2">Your Doctors</h6>
                             <h2 class="card-title mb-0">
-                                <!-- This would be dynamic in a real implementation -->
-                                {{ appointments|map(attribute='doctor_id')|list|unique|count if appointments else 0 }}
+                                <!-- Count unique doctors using a Python list -->
+                                {% if appointments %}
+                                    {% set doctor_ids = [] %}
+                                    {% for appointment in appointments %}
+                                        {% if appointment.doctor_id not in doctor_ids %}
+                                            {% set _ = doctor_ids.append(appointment.doctor_id) %}
+                                        {% endif %}
+                                    {% endfor %}
+                                    {{ doctor_ids|length }}
+                                {% else %}
+                                    0
+                                {% endif %}
                             </h2>
                         </div>
                         <i class="fas fa-user-md fa-3x opacity-50"></i>
