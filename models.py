@@ -68,11 +68,14 @@ class Appointment(db.Model):
     patient_id = db.Column(db.Integer, db.ForeignKey('patient.id'), nullable=False)
     date = db.Column(db.Date, nullable=False)
     time = db.Column(db.Time, nullable=False)
-    status = db.Column(db.String(20), default='scheduled')  # scheduled, completed, cancelled
+    status = db.Column(db.String(20), default='pending')  # pending, approved, rejected, scheduled, completed, cancelled
     reason = db.Column(db.Text)
     notes = db.Column(db.Text)
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
     updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+    
+    # Relationships
+    notifications = db.relationship('Notification', backref='appointment', lazy='dynamic', cascade='all, delete-orphan')
 
 
 class SymptomCheck(db.Model):
@@ -100,3 +103,16 @@ class ImageAnalysisSection(db.Model):
     section_content = db.Column(db.Text, nullable=False)
     section_order = db.Column(db.Integer, default=0)
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
+
+
+class Notification(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    user_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
+    appointment_id = db.Column(db.Integer, db.ForeignKey('appointment.id'), nullable=True)
+    message = db.Column(db.Text, nullable=False)
+    type = db.Column(db.String(50), nullable=False)  # appointment_request, approval, rejection, cancellation, etc.
+    is_read = db.Column(db.Boolean, default=False)
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+    
+    # Relationships
+    user = db.relationship('User', backref=db.backref('notifications', lazy='dynamic', cascade='all, delete-orphan'))

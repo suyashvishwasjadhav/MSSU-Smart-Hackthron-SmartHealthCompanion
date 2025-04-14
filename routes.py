@@ -7,7 +7,7 @@ import base64
 import re
 from datetime import datetime, timedelta
 from app import app, db
-from models import User, Doctor, Patient, Appointment, SymptomCheck, ImageAnalysisSection
+from models import User, Doctor, Patient, Appointment, SymptomCheck, ImageAnalysisSection, Notification
 from config import GOOGLE_API_KEY
 import logging
 from sqlalchemy.exc import SQLAlchemyError
@@ -172,6 +172,19 @@ def dashboard():
     user_id = session.get('user_id')
     user_type = session.get('user_type')
     
+    # Get unread notification count
+    notification_count = Notification.query.filter_by(
+        user_id=user_id,
+        is_read=False
+    ).count()
+    
+    # Get recent notifications
+    recent_notifications = Notification.query.filter_by(
+        user_id=user_id
+    ).order_by(
+        Notification.created_at.desc()
+    ).limit(5).all()
+    
     if user_type == 'doctor':
         doctor = Doctor.query.filter_by(user_id=user_id).first()
         if not doctor:
@@ -179,10 +192,11 @@ def dashboard():
             flash('Doctor profile not found', 'danger')
             return redirect(url_for('login'))
         
-        # Get upcoming appointments
+        # Get all appointments for doctors, including pending requests
         upcoming_appointments = Appointment.query.filter_by(
-            doctor_id=doctor.id,
-            status='scheduled'
+            doctor_id=doctor.id
+        ).filter(
+            Appointment.status.in_(['pending', 'approved', 'scheduled'])
         ).filter(
             Appointment.date >= datetime.now().date()
         ).order_by(
@@ -190,11 +204,20 @@ def dashboard():
             Appointment.time
         ).limit(5).all()
         
+        # Get pending appointment requests for doctors
+        pending_requests = Appointment.query.filter_by(
+            doctor_id=doctor.id,
+            status='pending'
+        ).count()
+        
         return render_template(
             'dashboard.html',
             user_data=doctor,
             user_type=user_type,
-            appointments=upcoming_appointments
+            appointments=upcoming_appointments,
+            notification_count=notification_count,
+            recent_notifications=recent_notifications,
+            pending_requests=pending_requests
         )
     else:
         patient = Patient.query.filter_by(user_id=user_id).first()
@@ -203,10 +226,11 @@ def dashboard():
             flash('Patient profile not found', 'danger')
             return redirect(url_for('login'))
         
-        # Get upcoming appointments
+        # Get upcoming appointments for patients, including pending and approved
         upcoming_appointments = Appointment.query.filter_by(
-            patient_id=patient.id,
-            status='scheduled'
+            patient_id=patient.id
+        ).filter(
+            Appointment.status.in_(['pending', 'approved', 'scheduled'])
         ).filter(
             Appointment.date >= datetime.now().date()
         ).order_by(
@@ -226,7 +250,9 @@ def dashboard():
             user_data=patient,
             user_type=user_type,
             appointments=upcoming_appointments,
-            symptom_checks=recent_checks
+            symptom_checks=recent_checks,
+            notification_count=notification_count,
+            recent_notifications=recent_notifications
         )
 
 # Symptom checker route
@@ -623,20 +649,45 @@ def book_appointment():
                 flash('Selected doctor not found', 'danger')
                 return redirect(url_for('book_appointment'))
             
-            # Create new appointment
+            # Create new appointment with pending status
             new_appointment = Appointment(
                 doctor_id=doctor.id,
                 patient_id=patient.id,
                 date=appointment_date,
                 time=appointment_time,
-                status='scheduled',
+                status='pending',  # Changed from 'scheduled' to 'pending'
                 reason=reason
             )
             
             db.session.add(new_appointment)
+            db.session.flush()  # Get the ID without committing yet
+            
+            # Create notification for the doctor
+            doctor_user = User.query.get(doctor.user_id)
+            if doctor_user:
+                formatted_date = appointment_date.strftime('%A, %B %d, %Y')
+                formatted_time = appointment_time.strftime('%I:%M %p')
+                
+                doctor_notification = Notification(
+                    user_id=doctor_user.id,
+                    appointment_id=new_appointment.id,
+                    message=f"New appointment request from {patient.name} for {formatted_date} at {formatted_time}.",
+                    type="appointment_request"
+                )
+                db.session.add(doctor_notification)
+            
+            # Create notification for the patient
+            patient_notification = Notification(
+                user_id=patient.user_id,
+                appointment_id=new_appointment.id,
+                message=f"Your appointment request with Dr. {doctor.name} for {formatted_date} at {formatted_time} has been sent and is pending approval.",
+                type="appointment_pending"
+            )
+            db.session.add(patient_notification)
+            
             db.session.commit()
             
-            flash('Appointment booked successfully!', 'success')
+            flash('Appointment request sent! Waiting for doctor approval.', 'success')
             return redirect(url_for('dashboard'))
             
         except ValueError:
@@ -644,7 +695,7 @@ def book_appointment():
         except SQLAlchemyError as e:
             db.session.rollback()
             app.logger.error(f"Appointment booking error: {str(e)}")
-            flash('An error occurred while booking the appointment', 'danger')
+            flash('An error occurred while requesting the appointment', 'danger')
     
     # Get all doctors for selection
     doctors_list = Doctor.query.all()
@@ -711,8 +762,9 @@ def update_appointment_status(appointment_id):
     try:
         data = request.json
         new_status = data.get('status')
+        notes = data.get('notes', '')
         
-        if not new_status or new_status not in ['scheduled', 'completed', 'cancelled']:
+        if not new_status or new_status not in ['approved', 'rejected', 'scheduled', 'completed', 'cancelled']:
             return jsonify({'success': False, 'message': 'Invalid status'}), 400
         
         appointment = Appointment.query.get(appointment_id)
@@ -722,21 +774,77 @@ def update_appointment_status(appointment_id):
         # Check authorization
         user_id = session.get('user_id')
         user_type = session.get('user_type')
+        old_status = appointment.status
+        
+        # Formatted date and time for notifications
+        formatted_date = appointment.date.strftime('%A, %B %d, %Y')
+        formatted_time = appointment.time.strftime('%I:%M %p')
         
         if user_type == 'doctor':
             doctor = Doctor.query.filter_by(user_id=user_id).first()
             if not doctor or appointment.doctor_id != doctor.id:
                 return jsonify({'success': False, 'message': 'Not authorized'}), 403
+            
+            # Only doctors can approve or reject appointment requests
+            patient = Patient.query.get(appointment.patient_id)
+            
+            # Handle status change for doctor
+            if new_status == 'approved' and old_status == 'pending':
+                # Update appointment and create notification for the patient
+                patient_notification = Notification(
+                    user_id=patient.user_id,
+                    appointment_id=appointment.id,
+                    message=f"Dr. {doctor.name} has approved your appointment for {formatted_date} at {formatted_time}.",
+                    type="appointment_approved"
+                )
+                db.session.add(patient_notification)
+                
+            elif new_status == 'rejected' and old_status == 'pending':
+                # Update appointment and create notification for the patient
+                patient_notification = Notification(
+                    user_id=patient.user_id,
+                    appointment_id=appointment.id,
+                    message=f"Dr. {doctor.name} has declined your appointment request for {formatted_date} at {formatted_time}. Reason: {notes}",
+                    type="appointment_rejected"
+                )
+                db.session.add(patient_notification)
+            
+            elif new_status == 'completed' and old_status == 'scheduled':
+                # Create notification for the patient about completed appointment
+                patient_notification = Notification(
+                    user_id=patient.user_id,
+                    appointment_id=appointment.id,
+                    message=f"Your appointment with Dr. {doctor.name} on {formatted_date} at {formatted_time} has been marked as completed.",
+                    type="appointment_completed"
+                )
+                db.session.add(patient_notification)
+                
         else:
             patient = Patient.query.filter_by(user_id=user_id).first()
             if not patient or appointment.patient_id != patient.id:
                 return jsonify({'success': False, 'message': 'Not authorized'}), 403
             
-            # Patients can only cancel appointments, not mark them completed
-            if new_status == 'completed':
-                return jsonify({'success': False, 'message': 'Not authorized to mark appointment as completed'}), 403
+            # Patients can only cancel appointments, not mark them completed/approved/rejected
+            if new_status in ['completed', 'approved', 'rejected']:
+                return jsonify({'success': False, 'message': f'Not authorized to mark appointment as {new_status}'}), 403
+            
+            # Handle cancellation by patient
+            if new_status == 'cancelled' and old_status in ['pending', 'scheduled', 'approved']:
+                doctor = Doctor.query.get(appointment.doctor_id)
+                # Create notification for the doctor
+                doctor_notification = Notification(
+                    user_id=doctor.user_id,
+                    appointment_id=appointment.id,
+                    message=f"{patient.name} has cancelled their appointment for {formatted_date} at {formatted_time}. Reason: {notes}",
+                    type="appointment_cancelled"
+                )
+                db.session.add(doctor_notification)
         
+        # Update appointment status and notes
         appointment.status = new_status
+        if notes:
+            appointment.notes = notes
+        
         db.session.commit()
         
         return jsonify({'success': True, 'message': f'Appointment {new_status} successfully'})
@@ -754,3 +862,74 @@ def page_not_found(e):
 @app.errorhandler(500)
 def server_error(e):
     return render_template('error.html', code=500, message='Server error'), 500
+
+
+# Notifications route
+@app.route('/notifications')
+@login_required
+def notifications():
+    user_id = session.get('user_id')
+    
+    # Get all unread notifications for the user
+    user_notifications = Notification.query.filter_by(
+        user_id=user_id,
+        is_read=False
+    ).order_by(
+        Notification.created_at.desc()
+    ).all()
+    
+    # Get read notifications (limited to most recent 20)
+    read_notifications = Notification.query.filter_by(
+        user_id=user_id,
+        is_read=True
+    ).order_by(
+        Notification.created_at.desc()
+    ).limit(20).all()
+    
+    return render_template(
+        'notifications.html',
+        unread_notifications=user_notifications,
+        read_notifications=read_notifications
+    )
+
+
+# API route to mark notification as read
+@app.route('/api/notifications/<int:notification_id>/read', methods=['PUT'])
+@login_required
+def mark_notification_read(notification_id):
+    try:
+        notification = Notification.query.get(notification_id)
+        
+        if not notification:
+            return jsonify({'success': False, 'message': 'Notification not found'}), 404
+        
+        # Check if notification belongs to the user
+        user_id = session.get('user_id')
+        if notification.user_id != user_id:
+            return jsonify({'success': False, 'message': 'Not authorized'}), 403
+        
+        notification.is_read = True
+        db.session.commit()
+        
+        return jsonify({'success': True})
+        
+    except SQLAlchemyError as e:
+        db.session.rollback()
+        app.logger.error(f"Notification update error: {str(e)}")
+        return jsonify({'success': False, 'message': 'An error occurred'}), 500
+
+
+# API route to get unread notification count
+@app.route('/api/notifications/count')
+@login_required
+def get_notification_count():
+    user_id = session.get('user_id')
+    
+    count = Notification.query.filter_by(
+        user_id=user_id,
+        is_read=False
+    ).count()
+    
+    return jsonify({
+        'count': count
+    })
