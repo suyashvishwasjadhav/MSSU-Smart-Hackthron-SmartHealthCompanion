@@ -1,0 +1,190 @@
+{% extends 'base.html' %}
+
+{% block title %}Find Hospitals - HealthConnect{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.7.1/dist/leaflet.css" />
+<style>
+    .custom-div-icon {
+        background: transparent;
+        border: none;
+    }
+    .hospital-card {
+        transition: all 0.3s ease;
+    }
+    .hospital-card:hover {
+        transform: translateY(-5px);
+        box-shadow: 0 10px 20px rgba(0,0,0,0.1);
+    }
+    .search-box {
+        position: absolute;
+        top: 10px;
+        left: 10px;
+        z-index: 1000;
+        width: 250px;
+    }
+    .category-filter {
+        position: absolute;
+        top: 10px;
+        right: 10px;
+        z-index: 1000;
+        width: 200px;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid py-4">
+    <!-- Header Section -->
+    <div class="row mb-4">
+        <div class="col-lg-8 mx-auto text-center">
+            <h2 class="mb-3 fade-in"><i class="fas fa-hospital me-2"></i>Find Hospitals & Clinics</h2>
+            <p class="lead fade-in">Discover healthcare facilities near you using real-time location data.</p>
+        </div>
+    </div>
+
+    <!-- Map Section -->
+    <div class="row">
+        <div class="col-12 mb-4">
+            <div class="card border-0 shadow-lg fade-in">
+                <div class="card-header bg-primary text-white d-flex justify-content-between align-items-center">
+                    <h5 class="mb-0"><i class="fas fa-map-marked-alt me-2"></i>Healthcare Facilities Map</h5>
+                    <button id="get-user-location" class="btn btn-sm btn-light">
+                        <i class="fas fa-map-marker-alt me-2"></i> Use my location
+                    </button>
+                </div>
+                <div class="card-body p-0 position-relative">
+                    <div id="hospital-map" style="height: 500px;"></div>
+                    
+                    <!-- Search Box Overlay -->
+                    <div class="search-box">
+                        <div class="input-group">
+                            <input type="text" id="location-search" class="form-control" placeholder="Search location...">
+                            <button class="btn btn-primary" id="search-btn" type="button">
+                                <i class="fas fa-search"></i>
+                            </button>
+                        </div>
+                    </div>
+                    
+                    <!-- Category Filter Overlay -->
+                    <div class="category-filter">
+                        <select class="form-select" id="facility-type">
+                            <option value="all">All Facilities</option>
+                            <option value="hospital">Hospitals</option>
+                            <option value="clinic">Clinics</option>
+                            <option value="pharmacy">Pharmacies</option>
+                            <option value="dentist">Dental Clinics</option>
+                            <option value="optician">Optical Centers</option>
+                        </select>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Nearby Facilities Section -->
+    <div class="row">
+        <div class="col-12">
+            <div class="card border-0 shadow-lg fade-in">
+                <div class="card-header bg-info text-white d-flex justify-content-between align-items-center">
+                    <h5 class="mb-0"><i class="fas fa-list me-2"></i>Nearby Healthcare Facilities</h5>
+                    <span id="results-count" class="badge bg-light text-dark">0 Found</span>
+                </div>
+                <div class="card-body">
+                    <div id="hospital-cards-container" class="row g-3">
+                        <!-- Hospitals will be loaded here by JavaScript -->
+                        <div class="col-12 text-center py-5" id="loading-message">
+                            <div class="spinner-border text-primary" role="status">
+                                <span class="visually-hidden">Loading...</span>
+                            </div>
+                            <p class="mt-2">Finding healthcare facilities near you...</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Info Section -->
+    <div class="row mt-4">
+        <div class="col-12">
+            <div class="card border-0 shadow-sm fade-in">
+                <div class="card-header bg-success text-white">
+                    <h5 class="mb-0"><i class="fas fa-info-circle me-2"></i>About Our Hospital Finder</h5>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-md-4 mb-3">
+                            <div class="d-flex">
+                                <div class="flex-shrink-0">
+                                    <i class="fas fa-database fa-2x text-success"></i>
+                                </div>
+                                <div class="flex-grow-1 ms-3">
+                                    <h5>Real-Time Data</h5>
+                                    <p class="mb-0">Our map uses OpenStreetMap data to provide you with up-to-date information about healthcare facilities in your area.</p>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-4 mb-3">
+                            <div class="d-flex">
+                                <div class="flex-shrink-0">
+                                    <i class="fas fa-filter fa-2x text-success"></i>
+                                </div>
+                                <div class="flex-grow-1 ms-3">
+                                    <h5>Advanced Filtering</h5>
+                                    <p class="mb-0">Filter by facility type to find exactly what you're looking for, whether it's hospitals, clinics, or pharmacies.</p>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-4 mb-3">
+                            <div class="d-flex">
+                                <div class="flex-shrink-0">
+                                    <i class="fas fa-directions fa-2x text-success"></i>
+                                </div>
+                                <div class="flex-grow-1 ms-3">
+                                    <h5>Get Directions</h5>
+                                    <p class="mb-0">Easily get directions to any facility with a single click, helping you navigate to the healthcare you need.</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Hospital Card Template (hidden, will be cloned by JavaScript) -->
+<template id="hospital-card-template">
+    <div class="col-lg-4 col-md-6">
+        <div class="card hospital-card h-100 border-0 shadow-sm">
+            <div class="card-body">
+                <div class="d-flex align-items-center mb-3">
+                    <div class="flex-shrink-0 me-3 text-center">
+                        <i class="fas fa-hospital fa-2x text-primary facility-icon"></i>
+                    </div>
+                    <div>
+                        <h5 class="card-title mb-0 facility-name">Hospital Name</h5>
+                        <p class="text-muted mb-0 facility-type">Hospital</p>
+                    </div>
+                </div>
+                <p class="facility-address mb-2"><i class="fas fa-map-marker-alt me-2 text-secondary"></i>Address goes here</p>
+                <p class="facility-distance mb-3"><i class="fas fa-route me-2 text-success"></i><span>0.0 km away</span></p>
+                <div class="d-grid gap-2">
+                    <a href="#" class="btn btn-sm btn-outline-primary directions-link" target="_blank">
+                        <i class="fas fa-directions me-1"></i> Get Directions
+                    </a>
+                    <a href="#" class="btn btn-sm btn-primary find-doctors-link">
+                        <i class="fas fa-user-md me-1"></i> Find Doctors Nearby
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+</template>
+{% endblock %}
+
+{% block extra_js %}
+<script src="https://unpkg.com/leaflet@1.7.1/dist/leaflet.js"></script>
+<script src="{{ url_for('static', filename='js/hospital_finder.js') }}"></script>
+{% endblock %}

@@ -938,3 +938,10 @@ def get_notification_count():
     return jsonify({
         'count': count
     })
+
+# Hospital finder route
+@app.route('/hospital-finder')
+@login_required
+@patient_required
+def hospital_finder():
+    return render_template('hospital_finder.html')
