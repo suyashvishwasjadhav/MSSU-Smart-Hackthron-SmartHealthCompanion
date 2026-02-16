@@ -1,0 +1,13 @@
+flask
+flask-sqlalchemy
+google-generativeai
+werkzeug
+pillow
+psycopg2-binary
+sqlalchemy
+openai
+email-validator
+flask-login
+gunicorn
+trafilatura
+sendgrid

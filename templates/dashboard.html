@@ -1,3 +1,4 @@
+
 {% extends 'base.html' %}
 
 {% block title %}Dashboard - HealthConnect{% endblock %}
@@ -188,7 +189,7 @@
                                     {% else %}
                                     <td>{{ appointment.doctor.name }}</td>
                                     {% endif %}
-                                    <td>{{ appointment.time.strftime('%-I:%M %p') if appointment.time }}</td>
+                                    <td>{{ appointment.time.strftime('%I:%M %p') if appointment.time }}</td>
                                     <td>
                                         {% if appointment.status == 'scheduled' %}
                                         <span class="badge text-bg-info">Scheduled</span>

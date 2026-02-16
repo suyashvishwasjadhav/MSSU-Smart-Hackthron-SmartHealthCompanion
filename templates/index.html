@@ -237,4 +237,301 @@
         </div>
     </div>
 </section>
+
+<!-- Video Background Section -->
+<section class="video-section">
+    <div class="video-container">
+        <video autoplay muted loop class="bg-video">
+            <source src="{{ url_for('static', filename='videos/videoplayback.mp4') }}" type="video/mp4">
+            Your browser does not support the video tag.
+        </video>
+        <div class="video-content">
+            <div class="container text-center py-5">
+                <h2 class="text-white mb-4">Healthcare Innovation at Work</h2>
+                <p class="lead text-white mb-4">Our technology helps connect patients with the right care at the right time.</p>
+                <a href="{{ url_for('register') }}" class="btn btn-light btn-lg">Get Started Today</a>
+            </div>
+        </div>
+    </div>
+</section>
+
+
+<!-- Emergency Services Fixed Button -->
+<div class="emergency-btn-container">
+    <button type="button" class="btn btn-danger emergency-btn" data-bs-toggle="modal" data-bs-target="#emergencyModal">
+        <i class="fas fa-ambulance me-2"></i> Emergency Services
+    </button>
+</div>
+
+<!-- Emergency Services Modal -->
+<div class="modal fade" id="emergencyModal" tabindex="-1" aria-labelledby="emergencyModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+            <div class="modal-header bg-danger text-white">
+                <h5 class="modal-title" id="emergencyModalLabel">Emergency Services</h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <div class="row g-3">
+                    <div class="col-md-6">
+                        <div class="d-grid">
+                            <button type="button" class="btn btn-lg btn-danger py-4" id="emergencyCallBtn">
+                                <i class="fas fa-phone-alt fa-2x mb-3"></i>
+                                <h5>Call Emergency</h5>
+                                <small>Connect to local emergency services</small>
+                            </button>
+                        </div>
+                    </div>
+                    <div class="col-md-6">
+                        <div class="d-grid">
+                            <button type="button" class="btn btn-lg btn-outline-danger py-4" id="sendLocationBtn">
+                                <i class="fas fa-map-marker-alt fa-2x mb-3"></i>
+                                <h5>Send Location</h5>
+                                <small>Share your location for immediate help</small>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+                <div class="mt-4 pt-3 border-top">
+                    <p class="mb-1"><strong>Note:</strong> Use only in case of genuine emergency.</p>
+                    <p class="text-muted small">This service connects you to the nearest available emergency resources based on your location.</p>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Emergency Services Scripts -->
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        // Emergency Call Button
+        document.getElementById('emergencyCallBtn').addEventListener('click', function() {
+            window.location.href = 'tel:911';
+        });
+        
+        // Send Location Button
+        document.getElementById('sendLocationBtn').addEventListener('click', function() {
+            if (navigator.geolocation) {
+                navigator.geolocation.getCurrentPosition(
+                    function(position) {
+                        const latitude = position.coords.latitude;
+                        const longitude = position.coords.longitude;
+                        
+                        // Send location to backend (this would be an AJAX call in a real application)
+                        alert('Your location has been shared. Emergency services will be notified. Stay calm and help is on the way.\n\nLocation coordinates: ' + latitude + ', ' + longitude);
+                        
+                        // In a real app, you would send this data to your backend:
+                        // fetch('/api/emergency-location', {
+                        //     method: 'POST',
+                        //     body: JSON.stringify({ latitude, longitude }),
+                        //     headers: { 'Content-Type': 'application/json' }
+                        // });
+                    },
+                    function(error) {
+                        alert('Unable to access your location. Please call emergency services directly.');
+                        console.error('Error getting location:', error);
+                    }
+                );
+            } else {
+                alert('Geolocation is not supported by your browser. Please call emergency services directly.');
+            }
+        });
+    });
+</script>
+{% endblock %}
+
+{% block extra_css %}
+<style>
+/* Additional custom styles to complement Bootstrap */
+/* Animations */
+.fade-in {
+    animation: fadeIn 0.5s ease-in;
+}
+@keyframes fadeIn {
+    from { opacity: 0; }
+    to { opacity: 1; }
+}
+
+/* Symptom checker form styling */
+.symptom-form {
+    border-radius: 8px;
+    transition: all 0.3s ease;
+}
+.symptom-form:hover {
+    box-shadow: 0 0.5rem 1rem rgba(0, 0, 0, 0.15);
+}
+
+/* Doctor card styling */
+.doctor-card {
+    transition: transform 0.3s ease, box-shadow 0.3s ease;
+}
+.doctor-card:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 0.5rem 1rem rgba(0, 0, 0, 0.15);
+}
+
+/* Custom loader animation */
+.loader {
+    display: inline-block;
+    width: 30px;
+    height: 30px;
+    border: 3px solid rgba(var(--bs-primary-rgb), 0.3);
+    border-radius: 50%;
+    border-top-color: var(--bs-primary);
+    animation: spin 1s ease-in-out infinite;
+}
+@keyframes spin {
+    to { transform: rotate(360deg); }
+}
+
+/* Health icons styling */
+.health-icon {
+    font-size: 2.5rem;
+    color: var(--bs-primary);
+    margin-bottom: 1rem;
+}
+
+/* Custom badge styles */
+.badge-scheduled {
+    background-color: var(--bs-info);
+    color: white;
+}
+.badge-completed {
+    background-color: var(--bs-success);
+    color: white;
+}
+.badge-cancelled {
+    background-color: var(--bs-danger);
+    color: white;
+}
+
+/* Hero section styles */
+.hero-section {
+    position: relative;
+    padding: 4rem 0;
+    background: linear-gradient(45deg, #2b5876, #4e4376);
+    color: white;
+}
+
+/* Responsive adjustments */
+@media (max-width: 768px) {
+    .hero-section {
+        padding: 2rem 0;
+    }
+    .health-icon {
+        font-size: 2rem;
+    }
+}
+
+/* Analysis result styling */
+.analysis-section {
+    border-left: 3px solid var(--bs-primary);
+    padding-left: 15px;
+    margin: 10px 0;
+}
+
+/* Profile page styling */
+.profile-header {
+    background: linear-gradient(45deg, #2b5876, #4e4376);
+    color: white;
+    border-radius: 8px;
+    padding: 20px;
+    margin-bottom: 20px;
+}
+
+/* Appointment calendar styles */
+.appointment-date-selected {
+    background-color: var(--bs-primary) !important;
+    color: white !important;
+}
+
+/* Dashboard stats */
+.stats-card {
+    border-radius: 10px;
+    border: none;
+    padding: 1.5rem;
+    transition: all 0.3s ease;
+}
+.stats-card:hover {
+    transform: translateY(-5px);
+}
+
+/* Specialty labels */
+.specialty-badge {
+    font-size: 0.8rem;
+    padding: 0.25rem 0.5rem;
+    border-radius: 50px;
+    background-color: rgba(var(--bs-info-rgb), 0.1);
+    color: var(--bs-info);
+    margin-right: 0.5rem;
+    margin-bottom: 0.5rem;
+    display: inline-block;
+}
+
+/* Emergency Button Styling */
+.emergency-btn-container {
+    position: fixed;
+    bottom: 30px;
+    right: 30px;
+    z-index: 1000;
+}
+
+.emergency-btn {
+    border-radius: 50px;
+    padding: 10px 20px;
+    box-shadow: 0 4px 10px rgba(0, 0, 0, 0.3);
+    font-weight: bold;
+    transition: all 0.3s ease;
+}
+
+.emergency-btn:hover {
+    transform: translateY(-3px);
+    box-shadow: 0 6px 15px rgba(0, 0, 0, 0.4);
+}
+
+/* Video Background Section */
+.video-section {
+    position: relative;
+    overflow: hidden;
+    padding: 0;
+}
+
+.video-container {
+    position: relative;
+    width: 100%;
+    overflow: hidden;
+}
+
+.bg-video {
+    width: 100%;
+    height: auto;
+    object-fit: cover;
+    min-height: 400px;
+}
+
+.video-content {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background-color: rgba(0, 0, 0, 0.5);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+/* Responsive styles for emergency button */
+@media (max-width: 768px) {
+    .emergency-btn-container {
+        bottom: 20px;
+        right: 20px;
+    }
+    
+    .emergency-btn {
+        padding: 8px 16px;
+        font-size: 14px;
+    }
+}
+</style>
 {% endblock %}

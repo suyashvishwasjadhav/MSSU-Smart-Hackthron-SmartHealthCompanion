@@ -84,35 +84,36 @@
                                 <tr id="appointment-{{ appointment.id }}" {% if request.args.get('highlight') == appointment.id|string %}class="bg-light"{% endif %}>
                                     <td>
                                         <div class="fw-bold">{{ appointment.date.strftime('%b %d, %Y') if appointment.date }}</div>
-                                        <div class="text-muted">{{ appointment.time.strftime('%-I:%M %p') if appointment.time }}</div>
+                                        <div class="text-muted">{{ appointment.time.strftime('%I:%M %p') if appointment.time }}</div>
                                     </td>
                                     <td>{{ appointment.patient.name }}</td>
                                     <td>{{ appointment.reason or 'Not specified' }}</td>
                                     <td><span class="badge bg-warning">Pending</span></td>
-                                    <td>
-                                        <div class="btn-group">
-                                            <button class="btn btn-sm btn-success appointment-action-btn" 
-                                                data-appointment-id="{{ appointment.id }}" 
-                                                data-status="approved"
-                                                data-bs-toggle="modal" 
-                                                data-bs-target="#approvalModal"
-                                                data-patient-name="{{ appointment.patient.name }}"
-                                                data-appointment-date="{{ appointment.date.strftime('%b %d, %Y') if appointment.date }}"
-                                                data-appointment-time="{{ appointment.time.strftime('%-I:%M %p') if appointment.time }}">
-                                                <i class="fas fa-check me-1"></i> Approve
-                                            </button>
-                                            <button class="btn btn-sm btn-danger appointment-action-btn" 
-                                                data-appointment-id="{{ appointment.id }}" 
-                                                data-status="rejected"
-                                                data-bs-toggle="modal" 
-                                                data-bs-target="#rejectionModal"
-                                                data-patient-name="{{ appointment.patient.name }}"
-                                                data-appointment-date="{{ appointment.date.strftime('%b %d, %Y') if appointment.date }}"
-                                                data-appointment-time="{{ appointment.time.strftime('%-I:%M %p') if appointment.time }}">
-                                                <i class="fas fa-times me-1"></i> Reject
-                                            </button>
-                                        </div>
-                                    </td>
+                                   <!-- Replace the existing appointment action buttons in the pending appointments section with this -->
+<td>
+    <div class="btn-group">
+        <button class="btn btn-sm btn-success" 
+            data-bs-toggle="modal" 
+            data-bs-target="#approvalModal"
+            data-appointment-id="{{ appointment.id }}" 
+            data-status="approved"
+            data-patient-name="{{ appointment.patient.name }}"
+            data-appointment-date="{{ appointment.date.strftime('%b %d, %Y') if appointment.date }}"
+            data-appointment-time="{{ appointment.time.strftime('%I:%M %p') if appointment.time }}">
+            <i class="fas fa-check me-1"></i> Approve
+        </button>
+        <button class="btn btn-sm btn-danger" 
+            data-bs-toggle="modal" 
+            data-bs-target="#rejectionModal"
+            data-appointment-id="{{ appointment.id }}" 
+            data-status="rejected"
+            data-patient-name="{{ appointment.patient.name }}"
+            data-appointment-date="{{ appointment.date.strftime('%b %d, %Y') if appointment.date }}"
+            data-appointment-time="{{ appointment.time.strftime('%I:%M %p') if appointment.time }}">
+            <i class="fas fa-times me-1"></i> Reject
+        </button>
+    </div>
+</td>
                                 </tr>
                                 {% endfor %}
                             </tbody>
@@ -151,7 +152,7 @@
                                 <tr>
                                     <td>
                                         <div class="fw-bold">{{ appointment.date.strftime('%b %d, %Y') if appointment.date }}</div>
-                                        <div class="text-muted">{{ appointment.time.strftime('%-I:%M %p') if appointment.time }}</div>
+                                        <div class="text-muted">{{ appointment.time.strftime('%I:%M %p') if appointment.time }}</div>
                                     </td>
                                     {% if user_type == 'doctor' %}
                                     <td>{{ appointment.patient.name }}</td>
@@ -221,7 +222,7 @@
                                 <tr>
                                     <td>
                                         <div class="fw-bold">{{ appointment.date.strftime('%b %d, %Y') if appointment.date }}</div>
-                                        <div class="text-muted">{{ appointment.time.strftime('%-I:%M %p') if appointment.time }}</div>
+                                        <div class="text-muted">{{ appointment.time.strftime('%I:%M %p') if appointment.time }}</div>
                                     </td>
                                     {% if user_type == 'doctor' %}
                                     <td>{{ appointment.patient.name }}</td>
@@ -283,7 +284,7 @@
                                 <tr>
                                     <td>
                                         <div class="fw-bold">{{ appointment.date.strftime('%b %d, %Y') if appointment.date }}</div>
-                                        <div class="text-muted">{{ appointment.time.strftime('%-I:%M %p') if appointment.time }}</div>
+                                        <div class="text-muted">{{ appointment.time.strftime('%I:%M %p') if appointment.time }}</div>
                                     </td>
                                     {% if user_type == 'doctor' %}
                                     <td>{{ appointment.patient.name }}</td>
