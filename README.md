@@ -1,5 +1,12 @@
 # Smart Health Companion
 
+## Contributors
+
+- **Suyash Vishwas Jadhav**: Lead Developer (Backend logic, AI integration, Database architecture, and UI/UX finalization)
+- **Yash Vichare**: Frontend Contributor (Initial UI/UX framework and components)
+
+---
+
 A professional, AI-powered healthcare ecosystem designed to bridge the gap between patients and healthcare providers. This project was developed as part of a University Smart Hackathon.
 
 ## Overview
@@ -27,11 +34,6 @@ Smart Health Companion is a comprehensive health management platform that levera
 - **Artificial Intelligence**: Google Gemini AI (Text & Vision APIs)
 - **Frontend**: HTML5, CSS3, JavaScript (Vanilla), Bootstrap, Font Awesome
 - **Development Environment**: Vite-ready structure for modern web standards
-
-## Contributors
-
-- **Suyash Vishwas Jadhav**: Lead Developer (Backend logic, AI integration, Database architecture, and UI/UX finalization)
-- **Yash Vichare**: Frontend Contributor (Initial UI/UX framework and components)
 
 ---
 
